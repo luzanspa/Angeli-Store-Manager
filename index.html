@@ -809,6 +809,24 @@
             }
 
             /**
+             * Aplica as traduções aos elementos do DOM com o atributo data-i18n.
+             */
+            function applyTranslations() {
+                document.querySelectorAll('[data-i18n]').forEach(element => {
+                    const key = element.getAttribute('data-i18n');
+                    if (translations[currentLanguage] && translations[currentLanguage][key]) {
+                        if (element.tagName === 'INPUT' && element.hasAttribute('placeholder')) {
+                            element.setAttribute('placeholder', translations[currentLanguage][key]);
+                        } else {
+                            element.textContent = translations[currentLanguage][key];
+                        }
+                    }
+                });
+                // Atualiza o título da página
+                document.title = translations[currentLanguage].appTitle;
+            }
+
+            /**
              * Formata um valor numérico para o formato de moeda brasileira (R$).
              * @param {number} value - O valor a ser formatado.
              * @returns {string} O valor formatado como R$.
@@ -1649,9 +1667,10 @@
 
                 // Atualiza a próxima data de pagamento
                 if (sale.installmentDetails.paymentsMade.length < totalInstallments) {
-                    const nextDate = new Date(sale.nextPaymentDate || sale.timestamp); // Usa a data da venda se nextPaymentDate não existir
-                    nextDate.setDate(nextDate.getDate() + 30); // Adiciona 30 dias para a próxima parcela
-                    sale.nextPaymentDate = nextDate.getTime();
+                    // Se já existe uma nextPaymentDate, usa-a como base, senão usa o timestamp da venda
+                    const baseDate = sale.nextPaymentDate ? new Date(sale.nextPaymentDate) : new Date(sale.timestamp);
+                    baseDate.setDate(baseDate.getDate() + 30); // Adiciona 30 dias para a próxima parcela
+                    sale.nextPaymentDate = baseDate.getTime();
                     showMessage('paymentDateUpdated', 'info');
                 } else {
                     sale.nextPaymentDate = null; // Todas as parcelas pagas
