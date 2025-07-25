@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="appTitle">Angeli - Controle de Estoque</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-angeli-background font-inter text-gray-800 antialiased min-h-screen flex flex-col">
+    <header class="bg-angeli-primary p-4 shadow-md flex justify-between items-center flex-wrap">
+        <h1 class="text-white text-2xl font-bold flex items-center" data-i18n="appTitle">
+            Angeli - Controle de Estoque
+        </h1>
+        <div class="flex items-center mt-2 md:mt-0">
+            <div id="statusMessage" class="text-white text-sm mr-4"></div>
+            <button id="settingsBtn" class="text-white p-2 rounded-md hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-white" title="Configurações">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+            </button>
+        </div>
+
+    <!-- Modal de Configurações -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content max-w-sm">
+            <h3 class="text-angeli-darkpink text-xl font-semibold mb-4">Configurações</h3>
+            <div class="mb-4">
+                <label for="modalLanguageSelector" class="block text-sm font-medium text-gray-700 mb-2">Idioma</label>
+                <select id="modalLanguageSelector" class="angeli-input">
+                    <option value="pt" data-i18n="lang_pt">Português</option>
+                    <option value="en" data-i18n="lang_en">English</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-4">
+                <button id="closeSettingsBtn" class="angeli-btn angeli-btn-secondary">Fechar</button>
+            </div>
+        </div>
+    </div>
+    </header>
+
+    <main class="container mx-auto p-4 flex-grow">
+        <section class="angeli-actions grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <button id="addProductBtn" class="angeli-btn angeli-btn-primary flex items-center justify-center" data-i18n="addProduct">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Adicionar Produto
+            </button>
+            <button id="registerSaleBtn" class="angeli-btn angeli-btn-primary flex items-center justify-center" data-i18n="registerSale">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25v2.25m-3-3.75h3.75m3-3.75h-3.75m0 0-3-3.75M12 15.75h3.75m-3.75 3.75h3.75m3-3.75h-3.75M6.75 7.5l3 4.5-3 4.5m7.5-9l3 4.5-3 4.5m-7.5 0h-.008v.008H12v-.008h-.008m0 0H12.75" />
+                </svg>
+                Registrar Venda
+            </button>
+            <button id="viewSalesHistoryBtn" class="angeli-btn angeli-btn-secondary flex items-center justify-center" data-i18n="salesHistory">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                Histórico de Vendas
+            </button>
+            <button id="viewTotalStockBtn" class="angeli-btn angeli-btn-secondary flex items-center justify-center" data-i18n="totalStock">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l3.75 4.5 3-3L21.75 6" />
+                </svg>
+                Visualizar Estoque
+            </button>
+            <button id="generateReportBtn" class="angeli-btn angeli-btn-secondary flex items-center justify-center" data-i18n="generateReport">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5A3.375 3.375 0 0 0 10.5 3.75h-1.5A1.125 1.125 0 0 1 7.875 2.25v-1.5A3.375 3.375 0 0 0 4.5 0v16.5a3.375 3.375 0 0 0 3.375 3.375h12.75a3.375 3.375 0 0 0 3.375-3.375V14.25m-9-2.25h.75a.375.375 0 0 1 .375.375v3a.375.375 0 0 1-.375.375h-.75a.375.375 0 0 1-.375-.375v-3a.375.375 0 0 1 .375-.375z" />
+                </svg>
+                Gerar Relatório
+            </button>
+            <button id="exportDataBtn" class="angeli-btn angeli-btn-secondary flex items-center justify-center" data-i18n="exportData">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M7.5 7.5h9" />
+                </svg>
+                Exportar Dados
+            </button>
+            <input type="file" id="importDataInput" class="hidden" accept=".json">
+            <button id="importDataBtn" class="angeli-btn angeli-btn-secondary flex items-center justify-center" data-i18n="importData">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M7.5 7.5h9" />
+                </svg>
+                Importar Dados
+            </button>
+        </section>
+
+        <section id="productsSection" class="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <h2 class="text-angeli-darkpink text-2xl font-semibold mb-4 flex items-center" data-i18n="yourProducts">
+                Seus Produtos
+            </h2>
+            <div class="mb-4">
+                <input type="text" id="searchInput" placeholder="Pesquisar produtos por nome, SKU, cor ou tamanho..." class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-angeli-primary" data-i18n="searchPlaceholder">
+            </div>
+            <div id="loadingProducts" class="text-center text-gray-500 hidden" data-i18n="loading">Carregando produtos...</div>
+            <div id="productsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            <div id="noProductsFound" class="text-center text-gray-500 mt-4 hidden" data-i18n="noProducts">Nenhum produto encontrado.</div>
+        </section>
+
+        <section id="salesHistorySection" class="bg-white p-6 rounded-lg shadow-lg hidden">
+            <h2 class="text-angeli-darkpink text-2xl font-semibold mb-4 flex items-center" data-i18n="salesHistoryTitle">
+                Histórico de Vendas
+                <button id="backToProductsBtn" class="ml-auto angeli-btn angeli-btn-secondary text-sm px-3 py-1 flex items-center" data-i18n="backToProducts">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M7 13h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2z" />
+                    </svg>
+                    Voltar aos Produtos
+                </button>
+            </h2>
+            <div id="loadingSales" class="text-center text-gray-500 hidden" data-i18n="loadingSales">Carregando histórico de vendas...</div>
+            <div id="salesList" class="space-y-6">
+                </div>
+            <div id="noSalesFound" class="text-center text-gray-500 mt-4 hidden" data-i18n="noSales">Nenhuma venda registrada.</div>
+        </section>
+    </main>
+
+    <footer class="p-4 text-center text-gray-600 text-sm mt-auto" data-i18n="footer">
+        Angeli - Controle de Estoque © 2025. Todos os direitos reservados.
+    </footer>
+
+    <div id="productModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="productModalTitle" class="text-angeli-darkpink text-2xl font-semibold mb-6" data-i18n="addProductTitle">Adicionar Novo Produto</h3>
+            <form id="productForm" class="space-y-4">
+                <div>
+                    <label for="productName" class="block text-sm font-medium text-gray-700" data-i18n="productNameLabel">Nome do Produto <span class="text-red-500">*</span></label>
+                    <input type="text" id="productName" required class="angeli-input" placeholder="Ex: Vestido Floral">
+                </div>
+                <div>
+                    <label for="productColor" class="block text-sm font-medium text-gray-700" data-i18n="colorLabel">Cor <span class="text-red-500">*</span></label>
+                    <input type="text" id="productColor" required class="angeli-input" placeholder="Ex: Vermelho">
+                </div>
+                <div>
+                    <label for="productSize" class="block text-sm font-medium text-gray-700" data-i18n="sizeLabel">Tamanho <span class="text-red-500">*</span></label>
+                    <input type="text" id="productSize" required class="angeli-input" placeholder="Ex: P, M, G">
+                </div>
+                <div>
+                    <label for="productSKU" class="block text-sm font-medium text-gray-700" data-i18n="skuLabel">SKU <span class="text-red-500">*</span></label>
+                    <input type="text" id="productSKU" required class="angeli-input" placeholder="Ex: PROD-123">
+                </div>
+                <div>
+                    <label for="productQuantity" class="block text-sm font-medium text-gray-700" data-i18n="quantityLabel">Quantidade <span class="text-red-500">*</span></label>
+                    <input type="number" id="productQuantity" min="0" required class="angeli-input" placeholder="Ex: 10">
+                </div>
+                <div>
+                    <label for="productPrice" class="block text-sm font-medium text-gray-700" data-i18n="priceLabel">Preço (R$) <span class="text-red-500">*</span></label>
+                    <input type="number" id="productPrice" min="0" step="0.01" required class="angeli-input" placeholder="Ex: 49.90">
+                </div>
+                <div>
+                    <label for="productImage" class="block text-sm font-medium text-gray-700" data-i18n="imageURLLabel">URL da Imagem (opcional)</label>
+                    <input type="url" id="productImage" class="angeli-input" placeholder="Ex: https://via.placeholder.com/150">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelProductBtn" class="angeli-btn angeli-btn-secondary" data-i18n="cancel">Cancelar</button>
+                    <button type="submit" class="angeli-btn angeli-btn-primary" data-i18n="saveProduct">Salvar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="saleModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 class="text-angeli-darkpink text-2xl font-semibold mb-6" data-i18n="registerSaleTitle">Registrar Nova Venda</h3>
+            <form id="saleForm" class="space-y-4">
+                <div>
+                    <label for="saleProductSelect" class="block text-sm font-medium text-gray-700" data-i18n="selectProductLabel">Selecionar Produto <span class="text-red-500">*</span></label>
+                    <select id="saleProductSelect" class="angeli-input">
+                        <option value="" data-i18n="selectOption">Selecione um produto</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="saleQuantity" class="block text-sm font-medium text-gray-700" data-i18n="quantityLabel">Quantidade <span class="text-red-500">*</span></label>
+                    <input type="number" id="saleQuantity" min="1" value="1" class="angeli-input" placeholder="Ex: 1">
+                </div>
+                <button type="button" id="addItemToSaleBtn" class="angeli-btn angeli-btn-primary w-full flex items-center justify-center" data-i18n="addItemToSale">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Adicionar Item
+                </button>
+
+                <div class="mt-6">
+                    <h4 class="text-lg font-medium text-gray-700 mb-2" data-i18n="saleItems">Itens na Venda:</h4>
+                    <div id="saleItemList" class="border border-gray-200 rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                        <p id="noSaleItems" class="text-gray-500 text-sm" data-i18n="noSaleItems">Nenhum item adicionado ainda.</p>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 p-2 bg-angeli-background rounded-md">
+                        <span class="text-gray-700 font-semibold" data-i18n="totalSale">Total da Venda:</span>
+                        <span id="totalSaleAmount" class="text-angeli-darkpink text-xl font-bold">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <hr class="my-6">
+
+                <div>
+                    <label for="paymentType" class="block text-sm font-medium text-gray-700" data-i18n="paymentTypeLabel">Tipo de Pagamento <span class="text-red-500">*</span></label>
+                    <select id="paymentType" required class="angeli-input">
+                        <option value="À Vista" data-i18n="cash">À Vista</option>
+                        <option value="Crédito" data-i18n="credit">Crédito</option>
+                        <option value="Parcelado" data-i18n="installment">Parcelado</option>
+                    </select>
+                </div>
+                <div id="installmentDetails" class="space-y-4 hidden">
+                    <div>
+                        <label for="numInstallments" class="block text-sm font-medium text-gray-700" data-i18n="installmentsNumber">Número de Parcelas <span class="text-red-500">*</span></label>
+                        <input type="number" id="numInstallments" min="2" value="2" class="angeli-input" placeholder="Ex: 3">
+                    </div>
+                    <div>
+                        <label for="installmentValue" class="block text-sm font-medium text-gray-700" data-i18n="installmentValue">Valor por Parcela</label>
+                        <input type="text" id="installmentValue" readonly class="angeli-input bg-gray-100 cursor-not-allowed">
+                    </div>
+                </div>
+                <div>
+                    <label for="customerName" class="block text-sm font-medium text-gray-700" data-i18n="customerNameLabel">Nome do Cliente (opcional)</label>
+                    <input type="text" id="customerName" class="angeli-input" placeholder="Ex: Ana Silva">
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelSaleBtn" class="angeli-btn angeli-btn-secondary" data-i18n="cancel">Cancelar</button>
+                    <button type="submit" class="angeli-btn angeli-btn-primary flex items-center justify-center" data-i18n="finalizeSale">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        Finalizar Venda
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal hidden">
+        <div class="modal-content max-w-sm">
+            <h3 id="confirmModalTitle" class="text-angeli-darkpink text-xl font-semibold mb-4" data-i18n="confirmation">Confirmação</h3>
+            <p id="confirmModalMessage" class="text-gray-700 mb-6"></p>
+            <div class="flex justify-end space-x-4">
+                <button type="button" id="cancelConfirmBtn" class="angeli-btn angeli-btn-secondary" data-i18n="cancel">Cancelar</button>
+                <button type="button" id="confirmActionBtn" class="angeli-btn angeli-btn-primary" data-i18n="confirm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50">
+        </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
