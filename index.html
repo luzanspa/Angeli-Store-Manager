@@ -526,29 +526,6 @@
             background: rgba(0, 0, 0, 0.03);
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 0.3rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .status-paid {
-            background: rgba(40, 167, 69, 0.15);
-            color: var(--success);
-        }
-
-        .status-pending {
-            background: rgba(255, 193, 7, 0.15);
-            color: var(--warning);
-        }
-
-        .status-overdue {
-            background: rgba(220, 53, 69, 0.15);
-            color: var(--danger);
-        }
-
         /* Modal */
         .modal-overlay {
             position: fixed;
@@ -936,6 +913,51 @@
             padding-top: 0;
             background: none;
         }
+
+        /* Sale Details Modal specific styles */
+        #saleDetailsModal .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        #saleDetailsModal .sale-overview,
+        #saleDetailsModal .sale-items-detail,
+        #saleDetailsModal .sale-installments-detail {
+            border: 1px solid #eee;
+            border-radius: var(--radius);
+            padding: 1rem;
+            background: var(--card-bg);
+        }
+        #saleDetailsModal .sale-overview h4,
+        #saleDetailsModal .sale-items-detail h4,
+        #saleDetailsModal .sale-installments-detail h4 {
+            color: var(--primary-dark);
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+        #saleDetailsModal .sale-items-detail ul,
+        #saleDetailsModal .sale-installments-detail ul {
+            list-style: none;
+            padding: 0;
+        }
+        #saleDetailsModal .sale-items-detail li,
+        #saleDetailsModal .sale-installments-detail li {
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #saleDetailsModal .sale-items-detail li:last-child,
+        #saleDetailsModal .sale-installments-detail li:last-child {
+            border-bottom: none;
+        }
+        #saleDetailsModal .sale-items-detail .item-price {
+            font-weight: 600;
+        }
+        #saleDetailsModal .sale-installments-detail .installment-status {
+            font-weight: 500;
+        }
     </style>
 </head>
 <body class="theme-pink">
@@ -982,9 +1004,7 @@
             <button class="btn btn-success fade-in" onclick="openSaleModal()">
                 <i class="fas fa-cash-register"></i> Registrar Venda
             </button>
-            <button class="btn btn-info fade-in" onclick="openBackupModal()">
-                <i class="fas fa-cloud-upload-alt"></i> Backup
-            </button>
+            <!-- O botão de backup foi movido para a seção de Configurações -->
             <button class="btn btn-warning fade-in" onclick="generateReport()">
                 <i class="fas fa-chart-bar"></i> Relatório
             </button>
@@ -1081,6 +1101,9 @@
                     <button class="btn btn-primary" onclick="exportPDF()" id="exportPdfBtn">
                         <i class="fas fa-file-export"></i> Exportar PDF
                     </button>
+                    <button class="btn btn-info" onclick="exportAllToCSV()" id="exportCsvBtn" style="margin-left: 0.5rem;">
+                        <i class="fas fa-file-csv"></i> Exportar CSV
+                    </button>
                 </div>
             </div>
 
@@ -1114,27 +1137,26 @@
             </div>
 
             <div class="card">
-                <h3>Backup em Nuvem (Simulado)</h3>
+                <h3>Backup e Dados</h3>
                 <div class="form-group">
-                    <label for="backupFrequency">Frequência de Backup Automático</label>
-                    <select id="backupFrequency" class="form-control">
-                        <option>Diariamente</option>
-                        <option selected>Semanalmente</option>
-                        <option>Mensalmente</option>
-                        <option>Desativado</option>
-                    </select>
+                    <label for="autoBackupToggle" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="autoBackupToggle" onchange="toggleAutoBackup()"> Backup Automático Local (após cada alteração)
+                    </label>
+                    <p style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.5rem;">Um arquivo de backup será baixado para o seu dispositivo após cada adição/edição/exclusão de produto ou venda.</p>
                 </div>
                 
                 <div class="form-group">
-                    <label for="cloudService">Serviço de Nuvem</label>
-                    <select id="cloudService" class="form-control">
-                        <option>Google Drive</option>
-                        <option selected>Dropbox</option>
-                        <option>OneDrive</option>
-                    </select>
+                    <button class="btn btn-info" onclick="exportAllData()"><i class="fas fa-download"></i> Exportar Todos os Dados (JSON)</button>
+                    <p style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.5rem;">Baixe um arquivo JSON com todos os seus produtos, vendas e configurações.</p>
                 </div>
-                
-                <button class="btn btn-primary" onclick="performBackup()"><i class="fas fa-cloud-upload-alt"></i> Fazer Backup Agora</button>
+
+                <div class="form-group">
+                    <label for="importFileInput" class="btn btn-warning" style="cursor: pointer;">
+                        <i class="fas fa-upload"></i> Importar Dados de Arquivo (JSON)
+                        <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+                    </label>
+                    <p style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.5rem;">Carregue um arquivo JSON para restaurar ou adicionar dados. Isso pode sobrescrever dados existentes.</p>
+                </div>
             </div>
 
             <div class="card" style="margin-top: 1rem;">
@@ -1238,7 +1260,7 @@
     <div class="modal-overlay" id="saleModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-cash-register"></i> Registrar Nova Venda</h3>
+                <h3 id="saleModalTitle"><i class="fas fa-cash-register"></i> Registrar Nova Venda</h3>
                 <button class="close-modal" aria-label="Fechar Modal">&times;</button>
             </div>
             <div class="modal-body">
@@ -1304,25 +1326,32 @@
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal()">Cancelar</button>
-                <button class="btn btn-success" onclick="finalizeSale()"><i class="fas fa-check"></i> Finalizar Venda</button>
+                <button class="btn btn-success" id="finalizeSaleBtn" onclick="finalizeSale()"><i class="fas fa-check"></i> Finalizar Venda</button>
             </div>
         </div>
     </div>
 
-    <!-- Installment Modal -->
-    <div class="modal-overlay" id="installmentModal">
+    <!-- Sale Details Modal (substitui Installment Modal) -->
+    <div class="modal-overlay" id="saleDetailsModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-file-invoice-dollar"></i> Gerenciar Parcelas</h3>
+                <h3 id="saleDetailsModalTitle"><i class="fas fa-file-invoice-dollar"></i> Detalhes da Venda</h3>
                 <button class="close-modal" aria-label="Fechar Modal">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label>Venda:</label>
-                    <div id="saleDetails"></div>
+                <div class="sale-overview">
+                    <h4>Resumo da Venda</h4>
+                    <div id="saleOverviewDetails"></div>
                 </div>
                 
-                <div class="form-group">
+                <div class="sale-items-detail">
+                    <h4>Itens da Venda</h4>
+                    <ul id="saleItemsDetailList">
+                        <!-- Itens da venda serão carregados aqui -->
+                    </ul>
+                </div>
+
+                <div class="sale-installments-detail" id="saleInstallmentsDetailSection" style="display: none;">
                     <h4>Parcelas</h4>
                     <table class="installment-table">
                         <thead>
@@ -1340,7 +1369,7 @@
                     </table>
                 </div>
                 
-                <div class="form-group">
+                <div class="sale-installments-detail" id="paymentHistorySection" style="display: none;">
                     <h4>Histórico de Pagamentos</h4>
                     <div id="paymentHistory" style="margin-top: 1rem;">
                         <!-- Histórico será carregado aqui -->
@@ -1353,11 +1382,11 @@
         </div>
     </div>
 
-    <!-- Backup Modal -->
+    <!-- Backup Modal (Mantido, mas as funções foram movidas para Configurações) -->
     <div class="modal-overlay" id="backupModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-cloud-upload-alt"></i> Backup em Nuvem</h3>
+                <h3><i class="fas fa-cloud-upload-alt"></i> Backup em Nuvem (Simulado)</h3>
                 <button class="close-modal" aria-label="Fechar Modal">&times;</button>
             </div>
             <div class="modal-body">
@@ -1380,7 +1409,7 @@
                 </div>
                 
                 <div class="card">
-                    <h3>Últimos Backups</h3>
+                    <h3>Últimos Backups (Simulados)</h3>
                     <ul id="backupHistory" style="margin-top: 0.5rem; padding-left: 1.5rem;">
                         <li>Nenhum backup registrado ainda.</li>
                     </ul>
@@ -1388,7 +1417,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal()">Fechar</button>
-                <button class="btn btn-primary" onclick="performBackup()"><i class="fas fa-cloud-upload-alt"></i> Fazer Backup Agora</button>
+                <button class="btn btn-primary" onclick="performBackup()"><i class="fas fa-cloud-upload-alt"></i> Fazer Backup Agora (Simulado)</button>
             </div>
         </div>
     </div>
@@ -1420,7 +1449,9 @@
             products: [],
             sales: [],
             currentSale: {
+                id: null, // Adicionado para rastrear se está editando uma venda existente
                 items: [],
+                originalItems: [], // Para controle de estoque ao editar
                 customer: '',
                 paymentMethod: 'cash',
                 installments: 1,
@@ -1428,8 +1459,15 @@
             },
             editingProductId: null,
             uploadedImage: null,
-            currentInstallmentSale: null,
-            backupHistory: []
+            currentSaleDetails: null, // Para a nova modal de detalhes da venda
+            backupHistory: [], // Histórico de backups simulados
+            settings: {
+                autoBackupEnabled: false, // Nova configuração para backup automático local
+                theme: 'pink',
+                stockAlerts: true,
+                paymentReminders: true,
+                updates: true
+            }
         };
 
         // Configuração do IndexedDB
@@ -1473,7 +1511,7 @@
             });
         }
 
-async function saveDataToIndexedDB(storeName, data) {
+        async function saveDataToIndexedDB(storeName, data) {
             if (!db) {
                 console.warn('IndexedDB not open. Cannot save data.');
                 return;
@@ -1489,7 +1527,8 @@ async function saveDataToIndexedDB(storeName, data) {
                     request = data.id ? store.put(data) : store.add(data); // Usa put para atualizar/adicionar, add para novo
                 }
 
-                request.onsuccess = (event) => {
+                request.onsuccess = async (event) => {
+                    // REMOVIDO: performAutomaticLocalBackup() daqui para evitar múltiplas chamadas
                     resolve(event.target.result); // Retorna o ID para operações de adição
                 };
 
@@ -1511,7 +1550,10 @@ async function saveDataToIndexedDB(storeName, data) {
                 const store = transaction.objectStore(storeName);
                 const request = store.delete(id);
 
-                request.onsuccess = () => resolve();
+                request.onsuccess = async () => {
+                    // REMOVIDO: performAutomaticLocalBackup() daqui para evitar múltiplas chamadas
+                    resolve();
+                };
                 request.onerror = (event) => {
                     console.error(`Error deleting from ${storeName}:`, event.target.errorCode);
                     reject(event.target.errorCode);
@@ -1535,6 +1577,24 @@ async function saveDataToIndexedDB(storeName, data) {
 
                 request.onerror = (event) => {
                     console.error(`Error loading from ${storeName}:`, event.target.errorCode);
+                    reject(event.target.errorCode);
+                };
+            });
+        }
+
+        async function clearObjectStore(storeName) {
+            if (!db) {
+                console.warn('IndexedDB not open. Cannot clear store.');
+                return;
+            }
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.clear();
+
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => {
+                    console.error(`Error clearing ${storeName}:`, event.target.errorCode);
                     reject(event.target.errorCode);
                 };
             });
@@ -1566,13 +1626,42 @@ async function saveDataToIndexedDB(storeName, data) {
             });
         }
 
-async function loadAppSettings() {
+        async function loadAppSettings() {
             try {
                 const settings = await loadDataFromIndexedDB('appSettings');
+                
+                // Carrega e aplica o tema
                 const themeSetting = settings.find(s => s.key === 'theme');
                 if (themeSetting) {
+                    appData.settings.theme = themeSetting.value;
                     document.getElementById('appTheme').value = themeSetting.value;
                     changeTheme(themeSetting.value, false); // Não mostra mensagem ao carregar
+                }
+
+                // Carrega e aplica a configuração de backup automático
+                const autoBackupSetting = settings.find(s => s.key === 'autoBackupEnabled');
+                if (autoBackupSetting) {
+                    appData.settings.autoBackupEnabled = autoBackupSetting.value;
+                    document.getElementById('autoBackupToggle').checked = autoBackupSetting.value;
+                }
+
+                // Carrega outras configurações de notificação (exemplo)
+                const stockAlertsSetting = settings.find(s => s.key === 'stockAlerts');
+                if (stockAlertsSetting) {
+                    appData.settings.stockAlerts = stockAlertsSetting.value;
+                    document.getElementById('stockAlerts').checked = stockAlertsSetting.value;
+                }
+
+                const paymentRemindersSetting = settings.find(s => s.key === 'paymentReminders');
+                if (paymentRemindersSetting) {
+                    appData.settings.paymentReminders = paymentRemindersSetting.value;
+                    document.getElementById('paymentReminders').checked = paymentRemindersSetting.value;
+                }
+                
+                const updatesSetting = settings.find(s => s.key === 'updates');
+                if (updatesSetting) {
+                    appData.settings.updates = updatesSetting.value;
+                    document.getElementById('updates').checked = updatesSetting.value;
                 }
 
                 const backupHistorySetting = await loadDataFromIndexedDB('backupHistory');
@@ -1590,6 +1679,7 @@ async function loadAppSettings() {
             if (!db) return;
             try {
                 await saveDataToIndexedDB('appSettings', { key, value });
+                appData.settings[key] = value; // Atualiza o estado local também
             } catch (error) {
                 console.error(`Falha ao salvar configuração ${key}:`, error);
             }
@@ -1599,6 +1689,9 @@ async function loadAppSettings() {
             try {
                 appData.products = await loadDataFromIndexedDB('products');
                 appData.sales = await loadDataFromIndexedDB('sales');
+
+                // Carrega as configurações antes de verificar os dados de exemplo
+                await loadAppSettings(); 
 
                 if (appData.products.length === 0 && appData.sales.length === 0) {
                     initializeSampleData();
@@ -1615,7 +1708,6 @@ async function loadAppSettings() {
                 renderSales();
                 initCharts();
                 updateDashboard();
-                loadAppSettings(); // Carrega outras configurações como tema e histórico de backup
 
                 // Mensagem inicial após o carregamento dos dados
                 setTimeout(() => {
@@ -1955,6 +2047,8 @@ async function loadAppSettings() {
             
             renderProducts();
             closeModal();
+            // CHAMA O BACKUP AUTOMÁTICO APENAS UMA VEZ AQUI
+            await performAutomaticLocalBackup();
         }
 
         function confirmDeleteProduct(id, name) {
@@ -1969,6 +2063,8 @@ async function loadAppSettings() {
             showMessage('success', 'Produto excluído com sucesso!');
             closeModal(); // Fecha o modal de confirmação
             renderProducts();
+            // CHAMA O BACKUP AUTOMÁTICO APENAS UMA VEZ AQUI
+            await performAutomaticLocalBackup();
         }
 
         function resetProductForm() {
@@ -2007,7 +2103,7 @@ async function loadAppSettings() {
                     if (hasOverdue) {
                         sale.status = 'overdue';
                         // Opcionalmente, salva o status atualizado no DB imediatamente
-                        saveDataToIndexedDB('sales', sale);
+                        saveDataToIndexedDB('sales', sale); // Esta chamada não vai disparar backup automático agora
                     }
                 }
 
@@ -2025,11 +2121,12 @@ async function loadAppSettings() {
                     <td>R$ ${sale.amount.toFixed(2)}</td>
                     <td>${statusBadge}</td>
                     <td>
-                        ${sale.paymentMethod === 'installment' ? 
-                            `<button class="action-btn btn-info" onclick="openInstallmentModal(${sale.id})" aria-label="Gerenciar parcelas da venda ${sale.id}">
-                                <i class="fas fa-file-invoice-dollar"></i>
-                            </button>` : ''
-                        }
+                        <button class="action-btn btn-info" onclick="openSaleDetailsModal(${sale.id})" aria-label="Ver detalhes da venda ${sale.id}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn btn-edit" onclick="openSaleModal(${sale.id})" aria-label="Editar venda ${sale.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <button class="action-btn btn-delete" onclick="confirmDeleteSale(${sale.id})" aria-label="Excluir venda ${sale.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
@@ -2062,9 +2159,45 @@ async function loadAppSettings() {
             renderSales();
         }
 
-        function openSaleModal() {
-            resetSaleForm();
-            populateProductDropdown();
+        /**
+         * Abre o modal de registro/edição de venda.
+         * @param {number|null} editId O ID da venda a ser editada, ou null para nova venda.
+         */
+        function openSaleModal(editId = null) {
+            resetSaleForm(); // Sempre reseta antes de abrir
+            populateProductDropdown(); // Popula o dropdown de produtos
+
+            if (editId !== null) {
+                const sale = appData.sales.find(s => s.id === editId);
+                if (sale) {
+                    appData.currentSale.id = sale.id;
+                    appData.currentSale.customer = sale.customer;
+                    appData.currentSale.paymentMethod = sale.paymentMethod;
+                    appData.currentSale.installments = sale.installments || 1;
+                    appData.currentSale.interest = sale.interest || 0;
+                    appData.currentSale.items = JSON.parse(JSON.stringify(sale.items)); // Deep copy
+                    appData.currentSale.originalItems = JSON.parse(JSON.stringify(sale.items)); // Salva os itens originais para ajuste de estoque
+
+                    document.getElementById('saleModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Venda';
+                    document.getElementById('saleCustomer').value = sale.customer;
+                    document.getElementById('paymentMethod').value = sale.paymentMethod;
+                    document.getElementById('installmentCount').value = sale.installments || 2;
+                    document.getElementById('installmentInterest').value = sale.interest || 0;
+                    document.getElementById('finalizeSaleBtn').innerText = 'Atualizar Venda';
+
+                    if (sale.paymentMethod === 'installment') {
+                        document.getElementById('installmentFields').style.display = 'block';
+                    } else {
+                        document.getElementById('installmentFields').style.display = 'none';
+                    }
+                    renderSaleItems();
+                    updateSaleTotal();
+                }
+            } else {
+                document.getElementById('saleModalTitle').innerHTML = '<i class="fas fa-cash-register"></i> Registrar Nova Venda';
+                document.getElementById('finalizeSaleBtn').innerText = 'Finalizar Venda';
+                appData.currentSale.id = null; // Garante que é uma nova venda
+            }
             openModal('saleModal');
         }
 
@@ -2077,22 +2210,24 @@ async function loadAppSettings() {
         async function deleteSale(id) {
             const saleToDelete = appData.sales.find(s => s.id === id);
             if (saleToDelete) {
-                // Opcionalmente, restaura o estoque se desejado, mas por padrão não o faremos agora
-                // saleToDelete.items.forEach(item => {
-                //     const product = appData.products.find(p => p.id === item.productId);
-                //     if (product) {
-                //         product.stock += item.quantity;
-                //         saveDataToIndexedDB('products', product); // Atualiza o estoque no DB
-                //     }
-                // });
+                // Ao excluir uma venda, o estoque dos itens vendidos deve ser restaurado.
+                for (const item of saleToDelete.items) {
+                    const product = appData.products.find(p => p.id === item.productId);
+                    if (product) {
+                        product.stock += item.quantity;
+                        await saveDataToIndexedDB('products', product);
+                    }
+                }
             }
 
             appData.sales = appData.sales.filter(sale => sale.id !== id);
             await deleteDataFromIndexedDB('sales', id);
-            showMessage('success', 'Venda excluída com sucesso!');
+            showMessage('success', 'Venda excluída com sucesso! Estoque restaurado.');
             closeModal(); // Fecha o modal de confirmação
             renderSales();
-            renderProducts(); // Atualiza a lista de produtos para refletir possíveis mudanças no estoque
+            renderProducts(); // Atualiza a lista de produtos para refletir mudanças no estoque
+            // CHAMA O BACKUP AUTOMÁTICO APENAS UMA VEZ AQUI
+            await performAutomaticLocalBackup();
         }
 
         function populateProductDropdown() {
@@ -2119,18 +2254,16 @@ async function loadAppSettings() {
             const product = appData.products.find(p => p.id === productId);
             if (!product) return;
             
-            if (product.stock < quantity) {
-                showMessage('error', `Estoque insuficiente! Disponível: ${product.stock}`);
+            // Calcula o estoque disponível considerando o que já está na venda atual
+            const currentQuantityInSale = appData.currentSale.items.find(item => item.productId === productId)?.quantity || 0;
+            if (product.stock < (quantity + currentQuantityInSale)) {
+                showMessage('error', `Estoque insuficiente! Disponível: ${product.stock - currentQuantityInSale}`);
                 return;
             }
 
             // Verifica se o item já existe na venda atual, se sim, atualiza a quantidade
             const existingItem = appData.currentSale.items.find(item => item.productId === productId);
             if (existingItem) {
-                if (product.stock < (existingItem.quantity + quantity)) {
-                    showMessage('error', `Estoque insuficiente para adicionar mais! Disponível: ${product.stock - existingItem.quantity}`);
-                    return;
-                }
                 existingItem.quantity += quantity;
             } else {
                 appData.currentSale.items.push({
@@ -2225,21 +2358,41 @@ async function loadAppSettings() {
             const total = appData.currentSale.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const totalWithInterest = paymentMethod === 'installment' ? total * (1 + interest/100) : total;
             
-            // Atualiza o estoque e salva no DB
-            for (const item of appData.currentSale.items) {
-                const product = appData.products.find(p => p.id === item.productId);
-                if (product) {
-                    product.stock -= item.quantity;
-                    await saveDataToIndexedDB('products', product);
+            // Lógica de ajuste de estoque para edição de venda
+            if (appData.currentSale.id) { // Editando venda existente
+                // Reverte o estoque dos itens originais
+                for (const originalItem of appData.currentSale.originalItems) {
+                    const product = appData.products.find(p => p.id === originalItem.productId);
+                    if (product) {
+                        product.stock += originalItem.quantity;
+                        await saveDataToIndexedDB('products', product);
+                    }
+                }
+                // Aplica o estoque dos novos (ou modificados) itens
+                for (const newItem of appData.currentSale.items) {
+                    const product = appData.products.find(p => p.id === newItem.productId);
+                    if (product) {
+                        product.stock -= newItem.quantity;
+                        await saveDataToIndexedDB('products', product);
+                    }
+                }
+            } else { // Nova venda
+                // Atualiza o estoque para uma nova venda
+                for (const item of appData.currentSale.items) {
+                    const product = appData.products.find(p => p.id === item.productId);
+                    if (product) {
+                        product.stock -= item.quantity;
+                        await saveDataToIndexedDB('products', product);
+                    }
                 }
             }
             
-            let newSale = {};
+            let saleToSave;
             if (appData.currentSale.id) { // Editando venda existente
-                newSale = appData.sales.find(s => s.id === appData.currentSale.id);
-                if (newSale) {
-                    newSale = {
-                        ...newSale,
+                saleToSave = appData.sales.find(s => s.id === appData.currentSale.id);
+                if (saleToSave) {
+                    saleToSave = {
+                        ...saleToSave,
                         customer: customer,
                         amount: totalWithInterest,
                         payment: paymentMethod === 'cash' ? 'À Vista' : 
@@ -2251,13 +2404,13 @@ async function loadAppSettings() {
                         status: paymentMethod === 'cash' || paymentMethod === 'credit' ? 'paid' : 'pending',
                         items: [...appData.currentSale.items]
                     };
-                    // Atualiza a venda existente
-                    const index = appData.sales.findIndex(s => s.id === newSale.id);
-                    if (index !== -1) appData.sales[index] = newSale;
+                    // Atualiza a venda existente no array appData.sales
+                    const index = appData.sales.findIndex(s => s.id === saleToSave.id);
+                    if (index !== -1) appData.sales[index] = saleToSave;
                 }
             } else { // Nova venda
                 const newId = await getNextId('sales');
-                newSale = {
+                saleToSave = {
                     id: newId,
                     date: new Date().toISOString().split('T')[0], // Armazena como string ISO
                     customer: customer,
@@ -2271,20 +2424,20 @@ async function loadAppSettings() {
                     status: paymentMethod === 'cash' || paymentMethod === 'credit' ? 'paid' : 'pending',
                     items: [...appData.currentSale.items]
                 };
-                appData.sales.push(newSale);
+                appData.sales.push(saleToSave);
             }
 
-            // Gera a lista de parcelas se o pagamento for parcelado e ainda não gerado
-            if (newSale.paymentMethod === 'installment' && !newSale.installmentList) {
-                newSale.installmentList = [];
-                const today = new Date();
-                const installmentValue = newSale.amount / newSale.installments;
+            // Gera a lista de parcelas se o pagamento for parcelado e ainda não gerado ou se a venda foi editada e as parcelas precisam ser recalculadas
+            if (saleToSave.paymentMethod === 'installment') {
+                saleToSave.installmentList = []; // Recria a lista de parcelas para garantir consistência
+                const saleDate = new Date(saleToSave.date); // Usa a data da venda para o cálculo da parcela
+                const installmentValue = saleToSave.amount / saleToSave.installments;
                 
-                for (let i = 1; i <= newSale.installments; i++) {
-                    const dueDate = new Date(today); // Clona a data para evitar mutação
-                    dueDate.setMonth(today.getMonth() + i);
+                for (let i = 1; i <= saleToSave.installments; i++) {
+                    const dueDate = new Date(saleDate); // Clona a data para evitar mutação
+                    dueDate.setMonth(saleDate.getMonth() + i);
                     
-                    newSale.installmentList.push({
+                    saleToSave.installmentList.push({
                         number: i,
                         dueDate: dueDate.toLocaleDateString('pt-BR'), // Formato de exibição
                         amount: installmentValue,
@@ -2292,18 +2445,24 @@ async function loadAppSettings() {
                         paymentDate: null
                     });
                 }
+            } else {
+                saleToSave.installmentList = []; // Garante que não há lista de parcelas para vendas não parceladas
             }
             
-            await saveDataToIndexedDB('sales', newSale); // Salva a nova/atualizada venda no DB
-            showMessage('success', 'Venda registrada com sucesso!');
+            await saveDataToIndexedDB('sales', saleToSave); // Salva a nova/atualizada venda no DB
+            showMessage('success', `Venda ${appData.currentSale.id ? 'atualizada' : 'registrada'} com sucesso!`);
             closeModal();
             renderProducts(); // Renderiza novamente os produtos para mostrar o estoque atualizado
             renderSales();
+            // CHAMA O BACKUP AUTOMÁTICO APENAS UMA VEZ AQUI
+            await performAutomaticLocalBackup();
         }
 
         function resetSaleForm() {
             appData.currentSale = {
+                id: null,
                 items: [],
+                originalItems: [],
                 customer: '',
                 paymentMethod: 'cash',
                 installments: 1,
@@ -2323,53 +2482,73 @@ async function loadAppSettings() {
             renderSaleItems();
         }
 
-        async function openInstallmentModal(saleId) {
+        /**
+         * Abre o modal de detalhes da venda (substitui o modal de parcelas).
+         * @param {number} saleId O ID da venda para exibir os detalhes.
+         */
+        async function openSaleDetailsModal(saleId) {
             // Recarrega as vendas do IndexedDB para garantir dados atualizados
             appData.sales = await loadDataFromIndexedDB('sales');
             const sale = appData.sales.find(s => s.id === saleId);
             if (!sale) return;
             
-            appData.currentInstallmentSale = sale;
+            appData.currentSaleDetails = sale; // Define a venda atual para detalhes
             
-            document.getElementById('saleDetails').innerHTML = `
+            // Preenche o resumo da venda
+            document.getElementById('saleOverviewDetails').innerHTML = `
                 <div><strong>ID:</strong> #V${sale.id.toString().padStart(4, '0')}</div>
+                <div><strong>Data:</strong> ${new Date(sale.date).toLocaleDateString('pt-BR')}</div>
                 <div><strong>Cliente:</strong> ${sale.customer}</div>
                 <div><strong>Total:</strong> R$ ${sale.amount.toFixed(2)}</div>
                 <div><strong>Forma de Pagamento:</strong> ${sale.payment}</div>
+                ${sale.paymentMethod === 'installment' ? `
+                    <div><strong>Parcelas:</strong> ${sale.installments}x</div>
+                    <div><strong>Juros:</strong> ${sale.interest}%</div>
+                ` : ''}
+                <div><strong>Status:</strong> ${sale.status === 'paid' ? 'Pago' : sale.status === 'pending' ? 'Pendente' : 'Atrasado'}</div>
             `;
-            
-            // Garante que installmentList exista e esteja atualizada com os detalhes da venda atual
-            if (!sale.installmentList || sale.installmentList.length !== sale.installments || 
-                sale.installmentList.reduce((sum, inst) => sum + inst.amount, 0).toFixed(2) !== sale.amount.toFixed(2)) {
-                
-                sale.installmentList = [];
-                const saleDate = new Date(sale.date); // Usa a data da venda para o cálculo da parcela
-                const installmentValue = (sale.amount * (1 + (sale.interest / 100))) / sale.installments;
-                
-                for (let i = 1; i <= sale.installments; i++) {
-                    const dueDate = new Date(saleDate); // Começa da data da venda
-                    dueDate.setMonth(saleDate.getMonth() + i);
-                    
-                    sale.installmentList.push({
-                        number: i,
-                        dueDate: dueDate.toLocaleDateString('pt-BR'),
-                        amount: installmentValue,
-                        status: 'pending',
-                        paymentDate: null
-                    });
-                }
-                await saveDataToIndexedDB('sales', sale); // Salva a lista de parcelas recém-gerada
+
+            // Preenche os itens da venda
+            const saleItemsDetailList = document.getElementById('saleItemsDetailList');
+            saleItemsDetailList.innerHTML = '';
+            if (sale.items && sale.items.length > 0) {
+                sale.items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${item.name} (${item.quantity}x)</span>
+                        <span class="item-price">R$ ${(item.quantity * item.price).toFixed(2)}</span>
+                    `;
+                    saleItemsDetailList.appendChild(li);
+                });
+            } else {
+                saleItemsDetailList.innerHTML = '<li>Nenhum item registrado para esta venda.</li>';
+            }
+
+            // Preenche e exibe as parcelas (se for venda parcelada)
+            const saleInstallmentsDetailSection = document.getElementById('saleInstallmentsDetailSection');
+            const paymentHistorySection = document.getElementById('paymentHistorySection');
+
+            if (sale.paymentMethod === 'installment' && sale.installmentList) {
+                saleInstallmentsDetailSection.style.display = 'block';
+                paymentHistorySection.style.display = 'block';
+                renderInstallments(sale); // Passa a venda para a função de renderização
+                renderPaymentHistory(sale); // Passa a venda para a função de histórico
+            } else {
+                saleInstallmentsDetailSection.style.display = 'none';
+                paymentHistorySection.style.display = 'none';
             }
             
-            renderInstallments();
-            openModal('installmentModal');
+            openModal('saleDetailsModal');
         }
 
-        function renderInstallments() {
+        /**
+         * Renderiza as parcelas no modal de detalhes da venda.
+         * @param {Object} sale A venda cujas parcelas serão renderizadas.
+         */
+        function renderInstallments(sale) {
             const installmentListEl = document.getElementById('installmentList');
             installmentListEl.innerHTML = '';
             
-            const sale = appData.currentInstallmentSale;
             if (!sale || !sale.installmentList) return;
 
             const today = new Date();
@@ -2404,7 +2583,7 @@ async function loadAppSettings() {
                     <td>${statusBadge}</td>
                     <td>
                         ${installment.status === 'pending' ? 
-                            `<button class="action-btn btn-success" onclick="payInstallment(${index})" aria-label="Pagar parcela ${installment.number}">
+                            `<button class="action-btn btn-success" onclick="payInstallment(${sale.id}, ${index})" aria-label="Pagar parcela ${installment.number}">
                                 <i class="fas fa-check"></i> Pagar
                             </button>` : 
                             `<span>Pago em ${installment.paymentDate}</span>`
@@ -2424,7 +2603,7 @@ async function loadAppSettings() {
                     appData.sales[saleIndex] = { ...sale };
                 }
 
-                saveDataToIndexedDB('sales', sale);
+                saveDataToIndexedDB('sales', sale); // Esta chamada não vai disparar backup automático agora
                 renderSales(); // Renderiza novamente a tabela de vendas principal para mostrar o status atualizado
             } else if (!allInstallmentsPaid && sale.status === 'paid') {
                 // Este cenário lida se uma parcela paga for de alguma forma "despaga", embora a UI atual não permita
@@ -2436,53 +2615,54 @@ async function loadAppSettings() {
                     appData.sales[saleIndex] = { ...sale };
                 }
 
-                saveDataToIndexedDB('sales', sale);
+                saveDataToIndexedDB('sales', sale); // Esta chamada não vai disparar backup automático agora
                 renderSales();
             }
             
-            renderPaymentHistory();
+            // Não chame renderPaymentHistory() aqui, pois já é chamado por openSaleDetailsModal
         }
 
-        async function payInstallment(installmentIndex) {
-            if (!appData.currentInstallmentSale) return;
+        /**
+         * Marca uma parcela como paga.
+         * @param {number} saleId O ID da venda à qual a parcela pertence.
+         * @param {number} installmentIndex O índice da parcela na lista.
+         */
+        async function payInstallment(saleId, installmentIndex) {
+            // Recarrega a venda específica para garantir que estamos trabalhando com os dados mais recentes
+            const sale = appData.sales.find(s => s.id === saleId);
+            if (!sale || !sale.installmentList || !sale.installmentList[installmentIndex]) return;
             
             const today = new Date();
             const paymentDate = today.toLocaleDateString('pt-BR');
             
-            appData.currentInstallmentSale.installmentList[installmentIndex].status = 'paid';
-            appData.currentInstallmentSale.installmentList[installmentIndex].paymentDate = paymentDate;
+            sale.installmentList[installmentIndex].status = 'paid';
+            sale.installmentList[installmentIndex].paymentDate = paymentDate;
 
-            // Atualiza a venda correspondente no array appData.sales para manter a consistência
-            const saleIndex = appData.sales.findIndex(sale => sale.id === appData.currentInstallmentSale.id);
-            if (saleIndex !== -1) {
-                appData.sales[saleIndex] = { ...appData.currentInstallmentSale };
-            }
-            
-            await saveDataToIndexedDB('sales', appData.currentInstallmentSale);
+            // Atualiza a venda no IndexedDB
+            await saveDataToIndexedDB('sales', sale);
 
-            // Recarrega as vendas do IndexedDB para garantir sincronização
+            // Recarrega todas as vendas para garantir que appData.sales esteja sincronizado
             appData.sales = await loadDataFromIndexedDB('sales');
-            // Atualiza a venda atual com a versão recarregada
-            appData.currentInstallmentSale = appData.sales.find(sale => sale.id === appData.currentInstallmentSale.id);
-
-            // Atualiza o histórico de pagamento para refletir a alteração
-            renderPaymentHistory();
+            // Atualiza appData.currentSaleDetails para refletir a alteração no modal aberto
+            appData.currentSaleDetails = appData.sales.find(s => s.id === saleId);
 
             showMessage('success', `Parcela ${installmentIndex + 1} marcada como paga!`);
-            renderInstallments(); // Renderiza novamente as parcelas para atualizar o status
+            renderInstallments(appData.currentSaleDetails); // Renderiza novamente as parcelas no modal
+            renderPaymentHistory(appData.currentSaleDetails); // Atualiza o histórico de pagamento
             
-            // Adicionado: Atualiza o dashboard para recalcular a receita pendente
-            updateDashboard();
-
-            // Adicionado log para debug
-            console.log('Receita Pendente atualizada após pagamento de parcela.');
+            updateDashboard(); // Atualiza o dashboard para recalcular a receita pendente
+            // CHAMA O BACKUP AUTOMÁTICO APENAS UMA VEZ AQUI
+            await performAutomaticLocalBackup();
         }
 
-        function renderPaymentHistory() {
+        /**
+         * Renderiza o histórico de pagamentos no modal de detalhes da venda.
+         * @param {Object} sale A venda cujo histórico de pagamentos será renderizado.
+         */
+        function renderPaymentHistory(sale) {
             const paymentHistory = document.getElementById('paymentHistory');
             paymentHistory.innerHTML = '';
             
-            const sale = appData.currentInstallmentSale;
             if (!sale || !sale.installmentList) {
                 paymentHistory.innerHTML = '<p>Nenhum histórico de pagamento disponível.</p>';
                 return;
@@ -2505,7 +2685,7 @@ async function loadAppSettings() {
             }
         }
 
-        // --- Backup (Simulado) ---
+        // --- Backup (Simulado) - Mantido para a seção de backup original, mas as novas funções são para backup local real ---
         function openBackupModal() {
             updateBackupHistoryDisplay();
             openModal('backupModal');
@@ -2533,7 +2713,7 @@ async function loadAppSettings() {
                 service: service
             };
             appData.backupHistory.push(backupRecord);
-            await saveDataToIndexedDB('backupHistory', backupRecord);
+            await saveDataToIndexedDB('backupHistory', backupRecord); // Esta chamada não vai disparar backup automático agora
 
             document.getElementById('backupTime').textContent = backupTime;
             document.getElementById('storageUsage').textContent = `${sizeMB}MB`;
@@ -2557,6 +2737,250 @@ async function loadAppSettings() {
             }
         }
 
+        // --- Funções de Exportação/Importação/Backup Automático Local ---
+
+        /**
+         * Exporta todos os dados do IndexedDB para um arquivo JSON.
+         * @param {string} [filenamePrefix='angeli_data'] Prefixo para o nome do arquivo.
+         */
+        async function exportAllData(filenamePrefix = 'angeli_data') {
+            try {
+                // REMOVIDO: showMessage('info', 'Preparando dados para exportação...'); para evitar duplicação
+                const allProducts = await loadDataFromIndexedDB('products');
+                const allSales = await loadDataFromIndexedDB('sales');
+                const allAppSettings = await loadDataFromIndexedDB('appSettings');
+                const allBackupHistory = await loadDataFromIndexedDB('backupHistory');
+
+                const dataToExport = {
+                    products: allProducts,
+                    sales: allSales,
+                    appSettings: allAppSettings,
+                    backupHistory: allBackupHistory
+                };
+
+                const jsonString = JSON.stringify(dataToExport, null, 2); // Formata com indentação para legibilidade
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.-]/g, ''); // YYYY-MM-DDTHH:mm:ss.sssZ -> YYYYMMDDTHHmmss
+                a.download = `${filenamePrefix}_${timestamp}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                // showMessage('success', 'Dados exportados com sucesso!'); // REMOVIDO: para evitar duplicação
+            } catch (error) {
+                console.error('Erro ao exportar dados:', error);
+                showMessage('error', 'Falha ao exportar dados. Verifique o console para detalhes.');
+            }
+        }
+
+        /**
+         * Lida com a seleção do arquivo JSON para importação.
+         * @param {Event} event O evento de mudança do input de arquivo.
+         */
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            if (file.type !== 'application/json') {
+                showMessage('error', 'Por favor, selecione um arquivo JSON válido.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    confirmImportData(importedData);
+                } catch (error) {
+                    console.error('Erro ao ler ou analisar o arquivo JSON:', error);
+                    showMessage('error', 'Erro ao ler o arquivo. Certifique-se de que é um JSON válido.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /**
+         * Exibe um modal de confirmação antes de importar os dados.
+         * @param {Object} data Os dados JSON a serem importados.
+         */
+        function confirmImportData(data) {
+            document.getElementById('confirmationModal').classList.add('active');
+            document.getElementById('confirmationMessage').innerHTML = `
+                Tem certeza que deseja importar estes dados?
+                <br>
+                <strong>Isso substituirá todos os seus dados atuais (Produtos, Vendas, Configurações).</strong>
+                <br>
+                Recomendamos que você <span style="font-weight: bold; color: var(--info);">exporte seus dados atuais</span> antes de prosseguir.
+            `;
+            document.getElementById('confirmActionBtn').onclick = () => importData(data);
+            document.getElementById('confirmActionBtn').classList.remove('btn-danger');
+            document.getElementById('confirmActionBtn').classList.add('btn-warning');
+            document.getElementById('confirmActionBtn').textContent = 'Sim, Importar';
+        }
+
+        /**
+         * Importa os dados para o IndexedDB após confirmação.
+         * @param {Object} importedData Os dados JSON a serem importados.
+         */
+        async function importData(importedData) {
+            closeModal(); // Fecha o modal de confirmação
+            showMessage('info', 'Iniciando importação de dados...');
+
+            try {
+                // Limpa os object stores existentes
+                await clearObjectStore('products');
+                await clearObjectStore('sales');
+                await clearObjectStore('appSettings');
+                await clearObjectStore('backupHistory');
+
+                // Insere os novos dados
+                if (importedData.products && Array.isArray(importedData.products)) {
+                    for (const product of importedData.products) {
+                        await saveDataToIndexedDB('products', product);
+                    }
+                }
+                if (importedData.sales && Array.isArray(importedData.sales)) {
+                    for (const sale of importedData.sales) {
+                        await saveDataToIndexedDB('sales', sale);
+                    }
+                }
+                if (importedData.appSettings && Array.isArray(importedData.appSettings)) {
+                    for (const setting of importedData.appSettings) {
+                        await saveDataToIndexedDB('appSettings', setting);
+                    }
+                }
+                if (importedData.backupHistory && Array.isArray(importedData.backupHistory)) {
+                    for (const backup of importedData.backupHistory) {
+                        await saveDataToIndexedDB('backupHistory', backup);
+                    }
+                }
+
+                // Recarrega todos os dados e renderiza a UI
+                await loadAllDataAndRender();
+                showMessage('success', 'Dados importados com sucesso!');
+            } catch (error) {
+                console.error('Erro ao importar dados:', error);
+                showMessage('error', 'Falha ao importar dados. Alguns dados podem estar corrompidos.');
+            } finally {
+                // Limpa o input de arquivo para permitir nova seleção
+                document.getElementById('importFileInput').value = '';
+                // Restaura o botão de confirmação
+                document.getElementById('confirmActionBtn').classList.remove('btn-warning');
+                document.getElementById('confirmActionBtn').classList.add('btn-danger');
+                document.getElementById('confirmActionBtn').textContent = 'Confirmar';
+            }
+        }
+
+        /**
+         * Ativa/Desativa o backup automático local.
+         */
+        function toggleAutoBackup() {
+            const isEnabled = document.getElementById('autoBackupToggle').checked;
+            saveAppSetting('autoBackupEnabled', isEnabled);
+            if (isEnabled) {
+                showMessage('info', 'Backup automático local ativado. Um arquivo será baixado para o seu dispositivo após cada alteração.');
+            } else {
+                showMessage('info', 'Backup automático local desativado.');
+            }
+        }
+
+        /**
+         * Realiza um backup automático local se a opção estiver ativada.
+         */
+        async function performAutomaticLocalBackup() {
+            if (appData.settings.autoBackupEnabled) {
+                console.log('Realizando backup automático local...');
+                // Usamos um pequeno atraso para não sobrecarregar o navegador com downloads muito rápidos
+                // e para dar tempo para a operação principal do IndexedDB ser concluída.
+                setTimeout(async () => { // Adicionado async aqui para o await
+                    await exportAllData('angeli_auto_backup'); // Aguarda a exportação
+                    showMessage('info', 'Backup automático local realizado.');
+                }, 500); 
+            }
+        }
+
+        // --- Exportação para CSV ---
+        async function exportAllToCSV() {
+            try {
+                showMessage('info', 'Preparando dados para exportação CSV...');
+
+                const allProducts = await loadDataFromIndexedDB('products');
+                const allSales = await loadDataFromIndexedDB('sales');
+
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.-]/g, '');
+
+                // 1. Exportar Produtos para CSV
+                let productsCsv = "ID Produto,Nome,SKU,Categoria,Preço,Estoque,Descrição\n";
+                allProducts.forEach(p => {
+                    productsCsv += `${p.id},"${p.name.replace(/"/g, '""')}","${p.sku.replace(/"/g, '""')}","${p.category.replace(/"/g, '""')}",${p.price.toFixed(2)},${p.stock},"${(p.description || '').replace(/"/g, '""')}"\n`;
+                });
+                downloadCSV(productsCsv, `angeli_produtos_${timestamp}.csv`);
+
+                // 2. Exportar Resumo de Vendas para CSV
+                let salesSummaryCsv = "ID Venda,Data,Cliente,Valor Total,Forma Pagamento,Status,Num. Parcelas,Juros (%),Num. Itens\n";
+                allSales.forEach(s => {
+                    const numItems = s.items ? s.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+                    salesSummaryCsv += `${s.id},${new Date(s.date).toLocaleDateString('pt-BR')},"${s.customer.replace(/"/g, '""')}",${s.amount.toFixed(2)},"${s.payment.replace(/"/g, '""')}",${s.status},${s.installments || 1},${s.interest || 0},${numItems}\n`;
+                });
+                downloadCSV(salesSummaryCsv, `angeli_vendas_resumo_${timestamp}.csv`);
+
+                // 3. Exportar Detalhes de Itens de Venda para CSV
+                let salesItemsCsv = "ID Venda,Nome Produto,Quantidade,Preco Unitario,Preco Total Item\n";
+                allSales.forEach(s => {
+                    if (s.items) {
+                        s.items.forEach(item => {
+                            salesItemsCsv += `${s.id},"${item.name.replace(/"/g, '""')}",${item.quantity},${item.price.toFixed(2)},${(item.quantity * item.price).toFixed(2)}\n`;
+                        });
+                    }
+                });
+                downloadCSV(salesItemsCsv, `angeli_vendas_detalhes_itens_${timestamp}.csv`);
+
+                // 4. Exportar Parcelas Pendentes para CSV
+                let pendingInstallmentsCsv = "ID Venda,Cliente,Num. Parcela,Vencimento,Valor Parcela,Status\n";
+                allSales.forEach(s => {
+                    if (s.paymentMethod === 'installment' && s.installmentList) {
+                        s.installmentList.forEach(installment => {
+                            if (installment.status !== 'paid') { // Apenas parcelas não pagas
+                                pendingInstallmentsCsv += `${s.id},"${s.customer.replace(/"/g, '""')}",${installment.number},${installment.dueDate},${installment.amount.toFixed(2)},${installment.status}\n`;
+                            }
+                        });
+                    }
+                });
+                downloadCSV(pendingInstallmentsCsv, `angeli_parcelas_pendentes_${timestamp}.csv`);
+
+                showMessage('success', 'Dados exportados para CSV com sucesso! Verifique sua pasta de downloads.');
+
+            } catch (error) {
+                console.error('Erro ao exportar para CSV:', error);
+                showMessage('error', 'Falha ao exportar para CSV. Verifique o console para detalhes.');
+            }
+        }
+
+        /**
+         * Função auxiliar para baixar um arquivo CSV.
+         * @param {string} csvString O conteúdo CSV.
+         * @param {string} filename O nome do arquivo.
+         */
+        function downloadCSV(csvString, filename) {
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
 
         // --- Geração de Relatórios ---
         function generateReport() {
