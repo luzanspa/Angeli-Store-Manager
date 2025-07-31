@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Adicionado para exportação de Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #ff69b4;
@@ -526,6 +528,30 @@
             background: rgba(0, 0, 0, 0.03);
         }
 
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 0.3em 0.6em;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 0.75em;
+            color: white; /* Cor do texto padrão para os badges */
+            text-align: center;
+        }
+
+        .status-paid {
+            background-color: var(--success); /* Verde para Pago */
+        }
+
+        .status-pending {
+            background-color: var(--warning); /* Amarelo para Pendente */
+            color: var(--dark); /* Texto escuro para melhor contraste no amarelo */
+        }
+
+        .status-overdue {
+            background-color: var(--danger); /* Vermelho para Atrasado */
+        }
+
         /* Modal */
         .modal-overlay {
             position: fixed;
@@ -870,7 +896,7 @@
 
         .message.warning {
             background: rgba(255, 193, 7, 0.9);
-            color: white;
+            color: var(--dark);
         }
 
         .message.info {
@@ -1104,6 +1130,10 @@
                     <button class="btn btn-info" onclick="exportAllToCSV()" id="exportCsvBtn" style="margin-left: 0.5rem;">
                         <i class="fas fa-file-csv"></i> Exportar CSV
                     </button>
+                    <!-- Novo botão para exportar para Excel -->
+                    <button class="btn btn-success" onclick="exportAllToExcel()" id="exportExcelBtn" style="margin-left: 0.5rem;">
+                        <i class="fas fa-file-excel"></i> Exportar Excel
+                    </button>
                 </div>
             </div>
 
@@ -1128,6 +1158,89 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Novo Relatório de Movimentação de Estoque -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3><i class="fas fa-exchange-alt"></i> Relatório de Movimentação de Estoque</h3>
+                <div class="search-filter-bar" style="margin-bottom: 1rem;">
+                    <input type="date" id="stockMoveDateFilterStart" class="form-control" onchange="filterStockMovements()">
+                    <input type="date" id="stockMoveDateFilterEnd" class="form-control" onchange="filterStockMovements()">
+                    <input type="text" id="stockMoveProductSearch" class="form-control" placeholder="Pesquisar produto..." oninput="filterStockMovements()">
+                    <select id="stockMoveTypeFilter" class="form-control" onchange="filterStockMovements()">
+                        <option value="">Todos os Tipos</option>
+                        <option value="Venda">Venda</option>
+                        <option value="Entrada">Entrada</option>
+                        <option value="Devolução">Devolução</option>
+                        <option value="Ajuste">Ajuste</option>
+                    </select>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="sales-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Valor Unitário</th>
+                                <th>Valor Total</th>
+                                <th>Estoque Final</th>
+                                <th>Cliente/Obs</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockMovementsTableBody">
+                            <!-- Movimentações de estoque serão carregadas dinamicamente -->
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="stockMovementsEmptyState" style="display: none;">
+                        <i class="fas fa-box-open"></i>
+                        <p>Nenhuma movimentação de estoque encontrada.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Novo Relatório Financeiro Completo -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3><i class="fas fa-dollar-sign"></i> Relatório Financeiro Completo</h3>
+                <div class="search-filter-bar" style="margin-bottom: 1rem;">
+                    <input type="date" id="financeReportDateFilterStart" class="form-control" onchange="filterFinancialReport()">
+                    <input type="date" id="financeReportDateFilterEnd" class="form-control" onchange="filterFinancialReport()">
+                    <select id="financeReportStatusFilter" class="form-control" onchange="filterFinancialReport()">
+                        <option value="">Todos os Status</option>
+                        <option value="paid">Pago</option>
+                        <option value="pending">Pendente</option>
+                        <option value="overdue">Atrasado</option>
+                    </select>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="sales-table">
+                        <thead>
+                            <tr>
+                                <th>Data Venda</th>
+                                <th>Cliente</th>
+                                <th>Produtos Vendidos</th>
+                                <th>Forma Pagamento</th>
+                                <th>Valor Total Venda</th>
+                                <th>Parcelado?</th>
+                                <th>Qtd Parcelas</th>
+                                <th>Valor Parcela</th>
+                                <th>Juros Aplicados</th>
+                                <th>Valor Já Recebido</th>
+                                <th>Valor Pendente</th>
+                                <th>Status Venda</th>
+                            </tr>
+                        </thead>
+                        <tbody id="financialReportTableBody">
+                            <!-- Dados financeiros serão carregados dinamicamente -->
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="financialReportEmptyState" style="display: none;">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <p>Nenhum dado financeiro encontrado.</p>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <!-- Settings Section -->
@@ -1137,53 +1250,66 @@
             </div>
 
             <div class="card">
-                <h3>Backup e Dados</h3>
-                <div class="form-group">
-                    <label for="autoBackupToggle" style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="autoBackupToggle" onchange="toggleAutoBackup()"> Backup Automático Local (após cada alteração)
-                    </label>
-                    <p style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.5rem;">Um arquivo de backup será baixado para o seu dispositivo após cada adição/edição/exclusão de produto ou venda.</p>
-                </div>
-                
-                <div class="form-group">
-                    <button class="btn btn-info" onclick="exportAllData()"><i class="fas fa-download"></i> Exportar Todos os Dados (JSON)</button>
-                    <p style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.5rem;">Baixe um arquivo JSON com todos os seus produtos, vendas e configurações.</p>
-                </div>
-
-                <div class="form-group">
-                    <label for="importFileInput" class="btn btn-warning" style="cursor: pointer;">
-                        <i class="fas fa-upload"></i> Importar Dados de Arquivo (JSON)
-                        <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
-                    </label>
-                    <p style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.5rem;">Carregue um arquivo JSON para restaurar ou adicionar dados. Isso pode sobrescrever dados existentes.</p>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top: 1rem;">
-                <h3>Personalização</h3>
+                <h3>Aparência</h3>
                 <div class="form-group">
                     <label for="appTheme">Tema do Aplicativo</label>
                     <select id="appTheme" class="form-control" onchange="changeTheme(this.value)">
                         <option value="pink">Rosa (Padrão)</option>
                         <option value="blue">Azul Profissional</option>
                         <option value="green">Verde Natureza</option>
-                        <option value="dark">Modo Escuro</option>
+                        <option value="dark">Escuro</option>
                     </select>
                 </div>
-                
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>Backup de Dados</h3>
                 <div class="form-group">
-                    <label>Notificações</label>
-                    <div>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <input type="checkbox" id="stockAlerts" checked> Alertas de estoque baixo
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <input type="checkbox" id="paymentReminders" checked> Lembretes de pagamento parcelado
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" id="updates"> Novidades e atualizações
+                    <label for="autoBackupToggle" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="autoBackupToggle" onchange="toggleAutoBackup()" style="width: auto;">
+                        Backup Automático Local (Download)
+                    </label>
+                    <small style="color: var(--secondary);">Um arquivo de backup será baixado automaticamente no seu dispositivo a cada alteração de dados.</small>
+                </div>
+                <button class="btn btn-primary" onclick="exportAllData('angeli_manual_backup')">
+                    <i class="fas fa-download"></i> Fazer Backup Manual (JSON)
+                </button>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="importFileInput">Importar Dados (JSON)</label>
+                    <div class="file-input-container">
+                        <input type="file" id="importFileInput" accept=".json" onchange="handleImportFile(event)">
+                        <label class="file-input-label" for="importFileInput">
+                            <i class="fas fa-upload"></i>
+                            <p>Clique para selecionar arquivo JSON</p>
+                            <p class="text-sm" style="margin-top: 0.5rem; color: var(--secondary);">Isso substituirá seus dados atuais.</p>
                         </label>
                     </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>Notificações</h3>
+                <div class="form-group">
+                    <label for="stockAlerts" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="stockAlerts" onchange="saveAppSetting('stockAlerts', this.checked)" style="width: auto;">
+                        Alertas de Baixo Estoque
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="paymentReminders" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="paymentReminders" onchange="saveAppSetting('paymentReminders', this.checked)" style="width: auto;">
+                        Lembretes de Pagamento
+                    </label>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>Outras Configurações</h3>
+                <div class="form-group">
+                    <label for="updates" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="updates" onchange="saveAppSetting('updates', this.checked)" style="width: auto;">
+                        Receber Atualizações do App
+                    </label>
                 </div>
             </div>
         </section>
@@ -1467,7 +1593,14 @@
                 stockAlerts: true,
                 paymentReminders: true,
                 updates: true
-            }
+            },
+            // Dados simulados para movimentações de estoque (além das vendas)
+            // Em um sistema real, estas seriam registradas através de outras interfaces
+            simulatedStockMovements: [
+                { id: 1, date: "2024-07-01", type: "Entrada", productId: 1, quantity: 10, unitValue: 25.00, clientOrNotes: "Fornecedor X", finalStock: 52 },
+                { id: 2, date: "2024-07-05", type: "Ajuste", productId: 3, quantity: -2, unitValue: 39.90, clientOrNotes: "Perda/Dano", finalStock: 13 },
+                { id: 3, date: "2024-07-10", type: "Entrada", productId: 4, quantity: 5, unitValue: 130.00, clientOrNotes: "Fornecedor Y", finalStock: 33 }
+            ]
         };
 
         // Configuração do IndexedDB
@@ -1493,6 +1626,10 @@
                     }
                     if (!db.objectStoreNames.contains('backupHistory')) {
                         db.createObjectStore('backupHistory', { keyPath: 'id', autoIncrement: true });
+                    }
+                    // Novo object store para movimentações de estoque simuladas, se necessário persistir
+                    if (!db.objectStoreNames.contains('stockMovements')) {
+                        db.createObjectStore('stockMovements', { keyPath: 'id', autoIncrement: true });
                     }
                     console.log('IndexedDB upgrade complete.');
                 };
@@ -1634,7 +1771,10 @@
                 const themeSetting = settings.find(s => s.key === 'theme');
                 if (themeSetting) {
                     appData.settings.theme = themeSetting.value;
-                    document.getElementById('appTheme').value = themeSetting.value;
+                    const appThemeElement = document.getElementById('appTheme');
+                    if (appThemeElement) { // Adicionado verificação de null
+                        appThemeElement.value = themeSetting.value;
+                    }
                     changeTheme(themeSetting.value, false); // Não mostra mensagem ao carregar
                 }
 
@@ -1642,26 +1782,38 @@
                 const autoBackupSetting = settings.find(s => s.key === 'autoBackupEnabled');
                 if (autoBackupSetting) {
                     appData.settings.autoBackupEnabled = autoBackupSetting.value;
-                    document.getElementById('autoBackupToggle').checked = autoBackupSetting.value;
+                    const autoBackupToggleElement = document.getElementById('autoBackupToggle');
+                    if (autoBackupToggleElement) { // Adicionado verificação de null
+                        autoBackupToggleElement.checked = autoBackupSetting.value;
+                    }
                 }
 
                 // Carrega outras configurações de notificação (exemplo)
                 const stockAlertsSetting = settings.find(s => s.key === 'stockAlerts');
                 if (stockAlertsSetting) {
                     appData.settings.stockAlerts = stockAlertsSetting.value;
-                    document.getElementById('stockAlerts').checked = stockAlertsSetting.value;
+                    const stockAlertsElement = document.getElementById('stockAlerts');
+                    if (stockAlertsElement) { // Adicionado verificação de null
+                        stockAlertsElement.checked = stockAlertsSetting.value;
+                    }
                 }
 
                 const paymentRemindersSetting = settings.find(s => s.key === 'paymentReminders');
                 if (paymentRemindersSetting) {
                     appData.settings.paymentReminders = paymentRemindersSetting.value;
-                    document.getElementById('paymentReminders').checked = paymentRemindersSetting.value;
+                    const paymentRemindersElement = document.getElementById('paymentReminders');
+                    if (paymentRemindersElement) { // Adicionado verificação de null
+                        paymentRemindersElement.checked = paymentRemindersSetting.value;
+                    }
                 }
                 
                 const updatesSetting = settings.find(s => s.key === 'updates');
                 if (updatesSetting) {
                     appData.settings.updates = updatesSetting.value;
-                    document.getElementById('updates').checked = updatesSetting.value;
+                    const updatesElement = document.getElementById('updates');
+                    if (updatesElement) { // Adicionado verificação de null
+                        updatesElement.checked = updatesSetting.value;
+                    }
                 }
 
                 const backupHistorySetting = await loadDataFromIndexedDB('backupHistory');
@@ -1689,6 +1841,17 @@
             try {
                 appData.products = await loadDataFromIndexedDB('products');
                 appData.sales = await loadDataFromIndexedDB('sales');
+                // Carrega movimentações de estoque simuladas se existirem no DB
+                const storedSimulatedMovements = await loadDataFromIndexedDB('stockMovements');
+                if (storedSimulatedMovements.length > 0) {
+                    appData.simulatedStockMovements = storedSimulatedMovements;
+                } else {
+                    // Salva os dados simulados iniciais no DB se não houver nenhum
+                    for (const movement of appData.simulatedStockMovements) {
+                        await saveDataToIndexedDB('stockMovements', movement);
+                    }
+                }
+
 
                 // Carrega as configurações antes de verificar os dados de exemplo
                 await loadAppSettings(); 
@@ -1708,6 +1871,8 @@
                 renderSales();
                 initCharts();
                 updateDashboard();
+                renderStockMovements(); // Renderiza o novo relatório de movimentação de estoque
+                renderFinancialReport(); // Renderiza o novo relatório financeiro completo
 
                 // Mensagem inicial após o carregamento dos dados
                 setTimeout(() => {
@@ -1716,7 +1881,7 @@
 
             } catch (error) {
                 console.error('Erro ao carregar dados do IndexedDB:', error);
-                showMessage('error', 'Não foi possível carregar os dados. Use o modo anônimo se o problema persistir.');
+                showMessage('error', 'Não foi possível carregar os dados. Verifique o console para mais detalhes. Se estiver executando o arquivo diretamente, tente usar um servidor web local.');
             }
         }
 
@@ -1830,30 +1995,37 @@
                 { id: 4, name: "Fones Bluetooth", sku: "FON-BT-045", category: "Acessórios", price: 149.90, stock: 28, description: "Fones sem fio com cancelamento de ruído", image: '' }
             ];
 
+            // Ajuste nas datas de exemplo para simular situações de atraso/pendente
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+
             appData.sales = [
                 { 
                     id: 1, 
-                    date: "2024-06-30", // Formato ISO para fácil manipulação
+                    date: yesterday.toISOString().split('T')[0], // Venda de ontem
                     customer: "Maria Silva", 
                     amount: 389.90, 
                     payment: "Parcelado (3x)", 
                     paymentMethod: "installment",
                     installments: 3,
                     interest: 5,
-                    status: "pending", 
+                    status: "pending", // Será atualizado para 'overdue' se a parcela 1 estiver atrasada
                     items: [
                         { productId: 1, name: "Camiseta Básica Branca", quantity: 3, price: 29.90 },
                         { productId: 4, name: "Fones Bluetooth", quantity: 1, price: 149.90 }
                     ],
-                    installmentList: [ // Exemplo de parcelas pré-definidas para dados de exemplo
-                        { number: 1, dueDate: "30/07/2024", amount: (389.90 * 1.05) / 3, status: 'paid', paymentDate: "29/07/2024" },
-                        { number: 2, dueDate: "30/08/2024", amount: (389.90 * 1.05) / 3, status: 'pending', paymentDate: null },
-                        { number: 3, dueDate: "30/09/2024", amount: (389.90 * 1.05) / 3, status: 'pending', paymentDate: null }
+                    installmentList: [ 
+                        { number: 1, dueDate: yesterday.toLocaleDateString('pt-BR'), amount: (389.90 * 1.05) / 3, status: 'pending', paymentDate: null }, // Vencida
+                        { number: 2, dueDate: tomorrow.toLocaleDateString('pt-BR'), amount: (389.90 * 1.05) / 3, status: 'pending', paymentDate: null }, // Futura
+                        { number: 3, dueDate: new Date(tomorrow.getFullYear(), tomorrow.getMonth() + 1, tomorrow.getDate()).toLocaleDateString('pt-BR'), amount: (389.90 * 1.05) / 3, status: 'pending', paymentDate: null } // Futura
                     ]
                 },
                 { 
                     id: 2, 
-                    date: "2024-07-29", // Formato ISO
+                    date: today.toISOString().split('T')[0], // Venda de hoje
                     customer: "Carlos Oliveira", 
                     amount: 2499.00, 
                     payment: "À Vista", 
@@ -1865,7 +2037,7 @@
                 },
                 { 
                     id: 3, 
-                    date: "2024-07-28", // Formato ISO
+                    date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5).toISOString().split('T')[0], // Venda de 5 dias atrás
                     customer: "Loja Central", 
                     amount: 1280.50, 
                     payment: "Crédito", 
@@ -1874,6 +2046,24 @@
                     items: [
                         { productId: 1, name: "Camiseta Básica Branca", quantity: 10, price: 29.90 },
                         { productId: 3, name: "Livro: A Arte da Guerra", quantity: 15, price: 39.90 }
+                    ]
+                },
+                { 
+                    id: 4, 
+                    date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 2).toISOString().split('T')[0], // Venda de 2 dias atrás
+                    customer: "Ana Paula", 
+                    amount: 150.00, 
+                    payment: "Parcelado (2x)", 
+                    paymentMethod: "installment",
+                    installments: 2,
+                    interest: 0,
+                    status: "pending", 
+                    items: [
+                        { productId: 1, name: "Camiseta Básica Branca", quantity: 5, price: 29.90 }
+                    ],
+                    installmentList: [ 
+                        { number: 1, dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toLocaleDateString('pt-BR'), amount: 75.00, status: 'pending', paymentDate: null }, // Futura
+                        { number: 2, dueDate: new Date(today.getFullYear(), today.getMonth() + 1, today.getDate() + 7).toLocaleDateString('pt-BR'), amount: 75.00, status: 'pending', paymentDate: null } // Futura
                     ]
                 }
             ];
@@ -2093,21 +2283,36 @@
                 document.getElementById('salesEmptyState').style.display = 'none';
             }
 
-            filteredSales.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(sale => {
+            filteredSales.sort((a, b) => new Date(b.date + 'T00:00:00') - new Date(a.date + 'T00:00:00')).forEach(sale => { // CORREÇÃO AQUI
                 const row = document.createElement('tr');
                 
                 let statusBadge;
-                // Atualiza o status para pagamentos atrasados
-                if (sale.paymentMethod === 'installment' && sale.status === 'pending') {
-                    const hasOverdue = sale.installmentList.some(inst => inst.status === 'pending' && new Date(inst.dueDate.split('/').reverse().join('-')) < new Date());
-                    if (hasOverdue) {
-                        sale.status = 'overdue';
-                        // Opcionalmente, salva o status atualizado no DB imediatamente
-                        saveDataToIndexedDB('sales', sale); // Esta chamada não vai disparar backup automático agora
+                let currentSaleStatus = sale.status; // Começa com o status salvo
+
+                // Lógica para determinar o status real da venda, especialmente para parceladas
+                if (sale.paymentMethod === 'installment' && sale.installmentList) {
+                    const hasOverdueInstallment = sale.installmentList.some(inst => 
+                        inst.status === 'pending' && new Date(inst.dueDate.split('/').reverse().join('-') + 'T00:00:00') < new Date() // CORREÇÃO AQUI
+                    );
+                    const allInstallmentsPaid = sale.installmentList.every(inst => inst.status === 'paid');
+
+                    if (hasOverdueInstallment) {
+                        currentSaleStatus = 'overdue';
+                    } else if (allInstallmentsPaid) {
+                        currentSaleStatus = 'paid';
+                    } else {
+                        currentSaleStatus = 'pending';
                     }
                 }
 
-                switch(sale.status) {
+                // Atualiza o status da venda no objeto appData.sales se ele mudou
+                if (sale.status !== currentSaleStatus) {
+                    sale.status = currentSaleStatus;
+                    // Salva o status atualizado no DB imediatamente (sem disparar backup automático para evitar loop)
+                    saveDataToIndexedDB('sales', sale); 
+                }
+
+                switch(currentSaleStatus) {
                     case 'paid': statusBadge = '<span class="status-badge status-paid">Pago</span>'; break;
                     case 'pending': statusBadge = '<span class="status-badge status-pending">Pendente</span>'; break;
                     case 'overdue': statusBadge = '<span class="status-badge status-overdue">Atrasado</span>'; break;
@@ -2116,7 +2321,7 @@
                 
                 row.innerHTML = `
                     <td>#V${sale.id.toString().padStart(4, '0')}</td>
-                    <td>${new Date(sale.date).toLocaleDateString('pt-BR')}</td>
+                    <td>${new Date(sale.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td> <!-- CORREÇÃO AQUI -->
                     <td>${sale.customer}</td>
                     <td>R$ ${sale.amount.toFixed(2)}</td>
                     <td>${statusBadge}</td>
@@ -2145,11 +2350,27 @@
             return sales.filter(sale => {
                 const customer = sale.customer.toLowerCase();
                 const id = `#v${sale.id.toString().padStart(4, '0')}`.toLowerCase();
-                const saleDate = new Date(sale.date);
+                const saleDate = new Date(sale.date + 'T00:00:00'); // CORREÇÃO AQUI
                 
                 const matchesSearch = customer.includes(searchTerm) || id.includes(searchTerm);
-                const matchesDate = (!startDate || saleDate >= new Date(startDate)) && (!endDate || saleDate <= new Date(endDate));
-                const matchesStatus = statusFilter === '' || sale.status === statusFilter;
+                const matchesDate = (!startDate || saleDate >= new Date(startDate + 'T00:00:00')) && (!endDate || saleDate <= new Date(endDate + 'T23:59:59')); // Ajuste para incluir o dia inteiro
+                
+                let currentSaleStatus = sale.status;
+                if (sale.paymentMethod === 'installment' && sale.installmentList) {
+                    const hasOverdueInstallment = sale.installmentList.some(inst => 
+                        inst.status === 'pending' && new Date(inst.dueDate.split('/').reverse().join('-') + 'T00:00:00') < new Date() // CORREÇÃO AQUI
+                    );
+                    const allInstallmentsPaid = sale.installmentList.every(inst => inst.status === 'paid');
+
+                    if (hasOverdueInstallment) {
+                        currentSaleStatus = 'overdue';
+                    } else if (allInstallmentsPaid) {
+                        currentSaleStatus = 'paid';
+                    } else {
+                        currentSaleStatus = 'pending';
+                    }
+                }
+                const matchesStatus = statusFilter === '' || currentSaleStatus === statusFilter;
 
                 return matchesSearch && matchesDate && matchesStatus;
             });
@@ -2188,7 +2409,7 @@
                     if (sale.paymentMethod === 'installment') {
                         document.getElementById('installmentFields').style.display = 'block';
                     } else {
-                        document.getElementById('installmentFields').style.display = 'none';
+                        installmentFields.style.display = 'none';
                     }
                     renderSaleItems();
                     updateSaleTotal();
@@ -2339,6 +2560,18 @@
         document.getElementById('installmentCount').addEventListener('change', updateSaleTotal);
         document.getElementById('installmentInterest').addEventListener('change', updateSaleTotal);
 
+        /**
+         * Retorna a data atual no formato 'YYYY-MM-DD' no fuso horário local.
+         * @returns {string} Data formatada.
+         */
+        function getLocalDateString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0'); // Meses são 0-indexados
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         async function finalizeSale() {
             const customer = document.getElementById('saleCustomer').value.trim();
             const paymentMethod = document.getElementById('paymentMethod').value;
@@ -2412,7 +2645,7 @@
                 const newId = await getNextId('sales');
                 saleToSave = {
                     id: newId,
-                    date: new Date().toISOString().split('T')[0], // Armazena como string ISO
+                    date: getLocalDateString(), // Usando a função para obter a data local
                     customer: customer,
                     amount: totalWithInterest,
                     payment: paymentMethod === 'cash' ? 'À Vista' : 
@@ -2430,12 +2663,13 @@
             // Gera a lista de parcelas se o pagamento for parcelado e ainda não gerado ou se a venda foi editada e as parcelas precisam ser recalculadas
             if (saleToSave.paymentMethod === 'installment') {
                 saleToSave.installmentList = []; // Recria a lista de parcelas para garantir consistência
-                const saleDate = new Date(saleToSave.date); // Usa a data da venda para o cálculo da parcela
+                // Ao criar a data para cálculo das parcelas, garanta que seja interpretada como local
+                const saleDateForInstallment = new Date(saleToSave.date + 'T00:00:00'); 
                 const installmentValue = saleToSave.amount / saleToSave.installments;
                 
                 for (let i = 1; i <= saleToSave.installments; i++) {
-                    const dueDate = new Date(saleDate); // Clona a data para evitar mutação
-                    dueDate.setMonth(saleDate.getMonth() + i);
+                    const dueDate = new Date(saleDateForInstallment); // Clona a data para evitar mutação
+                    dueDate.setMonth(saleDateForInstallment.getMonth() + i);
                     
                     saleToSave.installmentList.push({
                         number: i,
@@ -2454,6 +2688,8 @@
             closeModal();
             renderProducts(); // Renderiza novamente os produtos para mostrar o estoque atualizado
             renderSales();
+            renderStockMovements(); // Atualiza o relatório de movimentação de estoque
+            renderFinancialReport(); // Atualiza o relatório financeiro
             // CHAMA O BACKUP AUTOMÁTICO APENAS UMA VEZ AQUI
             await performAutomaticLocalBackup();
         }
@@ -2497,7 +2733,7 @@
             // Preenche o resumo da venda
             document.getElementById('saleOverviewDetails').innerHTML = `
                 <div><strong>ID:</strong> #V${sale.id.toString().padStart(4, '0')}</div>
-                <div><strong>Data:</strong> ${new Date(sale.date).toLocaleDateString('pt-BR')}</div>
+                <div><strong>Data:</strong> ${new Date(sale.date + 'T00:00:00').toLocaleDateString('pt-BR')}</div> <!-- CORREÇÃO AQUI -->
                 <div><strong>Cliente:</strong> ${sale.customer}</div>
                 <div><strong>Total:</strong> R$ ${sale.amount.toFixed(2)}</div>
                 <div><strong>Forma de Pagamento:</strong> ${sale.payment}</div>
@@ -2561,7 +2797,11 @@
                 let actualStatus = installment.status;
 
                 // Verifica o status de atraso
-                if (actualStatus === 'pending' && new Date(installment.dueDate.split('/').reverse().join('-')) < today) {
+                // Converte a data de vencimento para um objeto Date para comparação
+                const dueDateParts = installment.dueDate.split('/');
+                const dueDateObject = new Date(parseInt(dueDateParts[2]), parseInt(dueDateParts[1]) - 1, parseInt(dueDateParts[0]));
+                
+                if (actualStatus === 'pending' && dueDateObject < today) {
                     actualStatus = 'overdue';
                 }
 
@@ -2607,7 +2847,12 @@
                 renderSales(); // Renderiza novamente a tabela de vendas principal para mostrar o status atualizado
             } else if (!allInstallmentsPaid && sale.status === 'paid') {
                 // Este cenário lida se uma parcela paga for de alguma forma "despaga", embora a UI atual não permita
-                sale.status = 'pending';
+                // Verifica se há alguma parcela pendente ou atrasada para reverter o status para 'pending'
+                const hasUnpaidInstallments = sale.installmentList.some(inst => inst.status !== 'paid');
+                if (hasUnpaidInstallments) {
+                    sale.status = 'pending'; // Ou 'overdue' se houver atrasadas, mas a renderSales já cuida disso
+                }
+                
 
                 // Atualiza a venda no array appData.sales para manter a consistência
                 const saleIndex = appData.sales.findIndex(s => s.id === sale.id);
@@ -2750,12 +2995,14 @@
                 const allSales = await loadDataFromIndexedDB('sales');
                 const allAppSettings = await loadDataFromIndexedDB('appSettings');
                 const allBackupHistory = await loadDataFromIndexedDB('backupHistory');
+                const allStockMovements = await loadDataFromIndexedDB('stockMovements'); // Inclui movimentações de estoque
 
                 const dataToExport = {
                     products: allProducts,
                     sales: allSales,
                     appSettings: allAppSettings,
-                    backupHistory: allBackupHistory
+                    backupHistory: allBackupHistory,
+                    stockMovements: allStockMovements // Adiciona ao JSON de exportação
                 };
 
                 const jsonString = JSON.stringify(dataToExport, null, 2); // Formata com indentação para legibilidade
@@ -2840,6 +3087,7 @@
                 await clearObjectStore('sales');
                 await clearObjectStore('appSettings');
                 await clearObjectStore('backupHistory');
+                await clearObjectStore('stockMovements'); // Limpa o novo object store
 
                 // Insere os novos dados
                 if (importedData.products && Array.isArray(importedData.products)) {
@@ -2860,6 +3108,11 @@
                 if (importedData.backupHistory && Array.isArray(importedData.backupHistory)) {
                     for (const backup of importedData.backupHistory) {
                         await saveDataToIndexedDB('backupHistory', backup);
+                    }
+                }
+                if (importedData.stockMovements && Array.isArray(importedData.stockMovements)) {
+                    for (const movement of importedData.stockMovements) {
+                        await saveDataToIndexedDB('stockMovements', movement);
                     }
                 }
 
@@ -2929,7 +3182,7 @@
                 let salesSummaryCsv = "ID Venda,Data,Cliente,Valor Total,Forma Pagamento,Status,Num. Parcelas,Juros (%),Num. Itens\n";
                 allSales.forEach(s => {
                     const numItems = s.items ? s.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-                    salesSummaryCsv += `${s.id},${new Date(s.date).toLocaleDateString('pt-BR')},"${s.customer.replace(/"/g, '""')}",${s.amount.toFixed(2)},"${s.payment.replace(/"/g, '""')}",${s.status},${s.installments || 1},${s.interest || 0},${numItems}\n`;
+                    salesSummaryCsv += `${s.id},${new Date(s.date + 'T00:00:00').toLocaleDateString('pt-BR')},"${s.customer.replace(/"/g, '""')}",${s.amount.toFixed(2)},"${s.payment.replace(/"/g, '""')}",${s.status},${s.installments || 1},${s.interest || 0},${numItems}\n`; // CORREÇÃO AQUI
                 });
                 downloadCSV(salesSummaryCsv, `angeli_vendas_resumo_${timestamp}.csv`);
 
@@ -2986,6 +3239,8 @@
         function generateReport() {
             showMessage('info', 'Gerando relatório... Isso pode levar alguns segundos.');
             initCharts(); // Garante que os gráficos sejam atualizados com os dados mais recentes
+            renderStockMovements(); // Renderiza o relatório de movimentação de estoque
+            renderFinancialReport(); // Renderiza o relatório financeiro
             // Em um aplicativo real, isso pode acionar um relatório do lado do servidor ou uma agregação mais complexa do lado do cliente
             setTimeout(() => {
                 showMessage('success', 'Relatório gerado com sucesso!');
@@ -3030,6 +3285,99 @@
             }
         }
 
+        /**
+         * Exporta todos os relatórios para um arquivo Excel (.xlsx) com múltiplas abas.
+         */
+        async function exportAllToExcel() {
+            const exportExcelBtn = document.getElementById('exportExcelBtn');
+            exportExcelBtn.innerHTML = '<span class="spinner"></span> Gerando...';
+            exportExcelBtn.disabled = true;
+            showMessage('info', 'Preparando dados para exportação Excel...');
+
+            try {
+                const workbook = XLSX.utils.book_new();
+
+                // --- Aba de Produtos ---
+                const productsData = appData.products.map(p => ({
+                    'ID Produto': p.id,
+                    'Nome': p.name,
+                    'SKU': p.sku,
+                    'Categoria': p.category,
+                    'Preço': p.price,
+                    'Estoque': p.stock,
+                    'Descrição': p.description
+                }));
+                const productsSheet = XLSX.utils.json_to_sheet(productsData);
+                XLSX.utils.book_append_sheet(workbook, productsSheet, 'Produtos');
+
+                // --- Aba de Resumo de Vendas ---
+                const salesSummaryData = appData.sales.map(s => {
+                    const numItems = s.items ? s.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+                    return {
+                        'ID Venda': s.id,
+                        'Data': new Date(s.date + 'T00:00:00').toLocaleDateString('pt-BR'), // CORREÇÃO AQUI
+                        'Cliente': s.customer,
+                        'Valor Total': s.amount,
+                        'Forma Pagamento': s.payment,
+                        'Status': s.status,
+                        'Num. Parcelas': s.installments || 1,
+                        'Juros (%)': s.interest || 0,
+                        'Num. Itens': numItems
+                    };
+                });
+                const salesSummarySheet = XLSX.utils.json_to_sheet(salesSummaryData);
+                XLSX.utils.book_append_sheet(workbook, salesSummarySheet, 'Vendas Resumo');
+
+                // --- Aba de Movimentação de Estoque ---
+                const allStockMovements = generateStockMovementsData(true); // Gera todos os movimentos para exportação
+                const stockMovementsData = allStockMovements.map(m => ({
+                    'Data': new Date(m.date + 'T00:00:00').toLocaleDateString('pt-BR'), // CORREÇÃO AQUI
+                    'Tipo': m.type,
+                    'Produto': `${m.productName} (${m.productSku})`,
+                    'Quantidade': m.quantity,
+                    'Valor Unitário': m.unitValue,
+                    'Valor Total': m.totalValue,
+                    'Estoque Final': m.finalStock,
+                    'Cliente/Obs': m.clientOrNotes
+                }));
+                const stockMovementsSheet = XLSX.utils.json_to_sheet(stockMovementsData);
+                XLSX.utils.book_append_sheet(workbook, stockMovementsSheet, 'Movimentação Estoque');
+
+                // --- Aba de Relatório Financeiro Completo ---
+                const allFinancialData = generateFinancialReportData(true); // Gera todos os dados financeiros para exportação
+                const financialReportData = allFinancialData.map(f => ({
+                    'Data Venda': new Date(f.saleDate + 'T00:00:00').toLocaleDateString('pt-BR'), // CORREÇÃO AQUI
+                    'Cliente': f.customer,
+                    'Produtos Vendidos': f.productsSold,
+                    'Forma Pagamento': f.paymentMethod,
+                    'Valor Total Venda': f.totalSaleValue,
+                    'Parcelado?': f.isInstallment ? 'Sim' : 'Não',
+                    'Qtd Parcelas': f.installmentCount,
+                    'Valor Parcela': f.installmentValue,
+                    'Juros Aplicados': f.interestApplied,
+                    'Valor Já Recebido': f.amountReceived,
+                    'Valor Pendente': f.amountPending,
+                    'Status Venda': f.saleStatus
+                }));
+                const financialReportSheet = XLSX.utils.json_to_sheet(financialReportData);
+                XLSX.utils.book_append_sheet(workbook, financialReportSheet, 'Relatório Financeiro');
+
+                // Salva o arquivo Excel
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.-]/g, '');
+                XLSX.writeFile(workbook, `angeli_relatorios_${timestamp}.xlsx`);
+
+                showMessage('success', 'Relatórios exportados para Excel com sucesso!');
+            } catch (error) {
+                console.error('Erro ao exportar para Excel:', error);
+                showMessage('error', 'Falha ao exportar para Excel. Verifique o console para detalhes.');
+            } finally {
+                exportExcelBtn.innerHTML = '<i class="fas fa-file-excel"></i> Exportar Excel';
+                exportExcelBtn.disabled = false;
+            }
+        }
+
+
         // --- Atualização do Painel ---
         function updateDashboard() {
             document.getElementById('totalProducts').textContent = appData.products.length;
@@ -3039,7 +3387,7 @@
 
             const monthSales = appData.sales
                 .filter(sale => {
-                    const saleDate = new Date(sale.date);
+                    const saleDate = new Date(sale.date + 'T00:00:00'); // CORREÇÃO AQUI
                     return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
                 })
                 .reduce((sum, sale) => sum + sale.amount, 0);
@@ -3066,7 +3414,7 @@
             
             const lastMonthSales = appData.sales
                 .filter(sale => {
-                    const saleDate = new Date(sale.date);
+                    const saleDate = new Date(sale.date + 'T00:00:00'); // CORREÇÃO AQUI
                     const prevMonth = new Date();
                     prevMonth.setMonth(currentMonth - 1); // Obtém a data do mês anterior
                     return saleDate.getMonth() === prevMonth.getMonth() && saleDate.getFullYear() === prevMonth.getFullYear();
@@ -3098,7 +3446,7 @@
             const currentDate = new Date();
             
             appData.sales.forEach(sale => {
-                const saleDate = new Date(sale.date);
+                const saleDate = new Date(sale.date + 'T00:00:00'); // CORREÇÃO AQUI
                 const monthDiff = (currentDate.getFullYear() - saleDate.getFullYear()) * 12 + 
                                 (currentDate.getMonth() - saleDate.getMonth());
                 
@@ -3266,17 +3614,271 @@
             });
         }
 
+        // --- Relatório de Movimentação de Estoque ---
+
+        /**
+         * Gera e retorna os dados de movimentação de estoque.
+         * @param {boolean} includeAll - Se true, retorna todos os movimentos sem aplicar filtros de UI.
+         * @returns {Array<Object>} Lista de objetos de movimentação de estoque.
+         */
+        function generateStockMovementsData(includeAll = false) {
+            let movements = [];
+
+            // Adiciona movimentos de venda (redução de estoque)
+            appData.sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    const product = appData.products.find(p => p.id === item.productId);
+                    if (product) {
+                        // Para vendas, o estoque final é o estoque do produto ANTES desta venda
+                        // Isso é um pouco complexo de rastrear historicamente com a estrutura atual.
+                        // Para simplificar, o "Estoque Final" aqui representa o estoque atual do produto.
+                        // Em um sistema real, você teria um log de estoque com snapshots.
+                        movements.push({
+                            date: sale.date,
+                            type: "Venda",
+                            productId: item.productId,
+                            productName: product.name,
+                            productSku: product.sku,
+                            quantity: -item.quantity, // Quantidade negativa para saída
+                            unitValue: item.price,
+                            totalValue: item.quantity * item.price,
+                            finalStock: product.stock + item.quantity, // Estoque antes desta venda
+                            clientOrNotes: `Venda para ${sale.customer} (ID: #V${sale.id.toString().padStart(4, '0')})`
+                        });
+                    }
+                });
+            });
+
+            // Adiciona movimentos simulados (Entrada, Ajuste, Devolução)
+            appData.simulatedStockMovements.forEach(movement => {
+                const product = appData.products.find(p => p.id === movement.productId);
+                if (product) {
+                    movements.push({
+                        date: movement.date,
+                        type: movement.type,
+                        productId: movement.productId,
+                        productName: product.name,
+                        productSku: product.sku,
+                        quantity: movement.quantity,
+                        unitValue: movement.unitValue,
+                        totalValue: Math.abs(movement.quantity) * movement.unitValue,
+                        finalStock: movement.finalStock,
+                        clientOrNotes: movement.clientOrNotes
+                    });
+                }
+            });
+
+            // Ordena os movimentos por data
+            movements.sort((a, b) => new Date(a.date + 'T00:00:00') - new Date(b.date + 'T00:00:00')); // CORREÇÃO AQUI
+
+            if (includeAll) {
+                return movements;
+            } else {
+                return applyStockMovementFilters(movements);
+            }
+        }
+
+        function applyStockMovementFilters(movements) {
+            const startDate = document.getElementById('stockMoveDateFilterStart').value;
+            const endDate = document.getElementById('stockMoveDateFilterEnd').value;
+            const searchTerm = document.getElementById('stockMoveProductSearch').value.toLowerCase();
+            const typeFilter = document.getElementById('stockMoveTypeFilter').value;
+
+            return movements.filter(move => {
+                const moveDate = new Date(move.date + 'T00:00:00'); // CORREÇÃO AQUI
+                const matchesDate = (!startDate || moveDate >= new Date(startDate + 'T00:00:00')) && (!endDate || moveDate <= new Date(endDate + 'T23:59:59'));
+                const matchesProduct = searchTerm === '' || move.productName.toLowerCase().includes(searchTerm) || move.productSku.toLowerCase().includes(searchTerm);
+                const matchesType = typeFilter === '' || move.type === typeFilter;
+
+                return matchesDate && matchesProduct && matchesType;
+            });
+        }
+
+        function renderStockMovements() {
+            const stockMovementsTableBody = document.getElementById('stockMovementsTableBody');
+            stockMovementsTableBody.innerHTML = '';
+            
+            const filteredMovements = generateStockMovementsData(); // Já aplica os filtros
+
+            if (filteredMovements.length === 0) {
+                document.getElementById('stockMovementsEmptyState').style.display = 'block';
+                return;
+            } else {
+                document.getElementById('stockMovementsEmptyState').style.display = 'none';
+            }
+
+            filteredMovements.forEach(move => {
+                const row = document.createElement('tr');
+                const quantityClass = move.quantity < 0 ? 'text-danger' : 'text-success'; // Para estilizar quantidades
+                const quantitySign = move.quantity > 0 ? '+' : '';
+
+                row.innerHTML = `
+                    <td>${new Date(move.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td> <!-- CORREÇÃO AQUI -->
+                    <td>${move.type}</td>
+                    <td>${move.productName} (${move.productSku})</td>
+                    <td class="${quantityClass}">${quantitySign}${move.quantity}</td>
+                    <td>R$ ${move.unitValue.toFixed(2)}</td>
+                    <td>R$ ${move.totalValue.toFixed(2)}</td>
+                    <td>${move.finalStock}</td>
+                    <td>${move.clientOrNotes || '-'}</td>
+                `;
+                stockMovementsTableBody.appendChild(row);
+            });
+        }
+
+        function filterStockMovements() {
+            renderStockMovements();
+        }
+
+        // --- Relatório Financeiro Completo ---
+
+        /**
+         * Gera e retorna os dados para o relatório financeiro completo.
+         * @param {boolean} includeAll - Se true, retorna todos os dados sem aplicar filtros de UI.
+         * @returns {Array<Object>} Lista de objetos de dados financeiros.
+         */
+        function generateFinancialReportData(includeAll = false) {
+            let financialData = [];
+
+            appData.sales.forEach(sale => {
+                const productsSoldList = sale.items.map(item => `${item.name} (${item.quantity}x)`).join(', ');
+                
+                let amountReceived = 0;
+                let amountPending = sale.amount; // Começa com o valor total da venda
+                let currentSaleStatus = sale.status;
+
+                if (sale.paymentMethod === 'installment' && sale.installmentList) {
+                    amountReceived = sale.installmentList
+                        .filter(inst => inst.status === 'paid')
+                        .reduce((sum, inst) => sum + inst.amount, 0);
+                    amountPending = sale.amount - amountReceived;
+
+                    const hasOverdueInstallment = sale.installmentList.some(inst => 
+                        inst.status === 'pending' && new Date(inst.dueDate.split('/').reverse().join('-') + 'T00:00:00') < new Date() // CORREÇÃO AQUI
+                    );
+                    const allInstallmentsPaid = sale.installmentList.every(inst => inst.status === 'paid');
+
+                    if (hasOverdueInstallment) {
+                        currentSaleStatus = 'Atrasado';
+                    } else if (allInstallmentsPaid) {
+                        currentSaleStatus = 'Pago';
+                    } else {
+                        currentSaleStatus = 'Pendente';
+                    }
+                } else {
+                    // Para vendas à vista ou crédito, o valor recebido é o total e o pendente é zero
+                    amountReceived = sale.amount;
+                    amountPending = 0;
+                    currentSaleStatus = 'Pago';
+                }
+
+                financialData.push({
+                    saleDate: sale.date,
+                    customer: sale.customer,
+                    productsSold: productsSoldList,
+                    paymentMethod: sale.payment,
+                    totalSaleValue: sale.amount,
+                    isInstallment: sale.paymentMethod === 'installment',
+                    installmentCount: sale.installments || 1,
+                    installmentValue: sale.paymentMethod === 'installment' && sale.installments > 0 ? (sale.amount / sale.installments) : sale.amount,
+                    interestApplied: sale.interest || 0,
+                    amountReceived: amountReceived,
+                    amountPending: amountPending,
+                    saleStatus: currentSaleStatus
+                });
+            });
+
+            // Ordena os dados financeiros por data da venda
+            financialData.sort((a, b) => new Date(a.saleDate + 'T00:00:00') - new Date(b.saleDate + 'T00:00:00')); // CORREÇÃO AQUI
+
+            if (includeAll) {
+                return financialData;
+            } else {
+                return applyFinancialReportFilters(financialData);
+            }
+        }
+
+        function applyFinancialReportFilters(data) {
+            const startDate = document.getElementById('financeReportDateFilterStart').value;
+            const endDate = document.getElementById('financeReportDateFilterEnd').value;
+            const statusFilter = document.getElementById('financeReportStatusFilter').value;
+
+            return data.filter(item => {
+                const saleDate = new Date(item.saleDate + 'T00:00:00'); // CORREÇÃO AQUI
+                const matchesDate = (!startDate || saleDate >= new Date(startDate + 'T00:00:00')) && (!endDate || saleDate <= new Date(endDate + 'T23:59:59'));
+                const matchesStatus = statusFilter === '' || item.saleStatus.toLowerCase() === statusFilter;
+
+                return matchesDate && matchesStatus;
+            });
+        }
+
+        function renderFinancialReport() {
+            const financialReportTableBody = document.getElementById('financialReportTableBody');
+            financialReportTableBody.innerHTML = '';
+            
+            const filteredFinancialData = generateFinancialReportData(); // Já aplica os filtros
+
+            if (filteredFinancialData.length === 0) {
+                document.getElementById('financialReportEmptyState').style.display = 'block';
+                return;
+            } else {
+                document.getElementById('financialReportEmptyState').style.display = 'none';
+            }
+
+            filteredFinancialData.forEach(item => {
+                const row = document.createElement('tr');
+                let statusBadgeClass = '';
+                switch(item.saleStatus) {
+                    case 'Pago': statusBadgeClass = 'status-paid'; break;
+                    case 'Pendente': statusBadgeClass = 'status-pending'; break;
+                    case 'Atrasado': statusBadgeClass = 'status-overdue'; break;
+                }
+
+                row.innerHTML = `
+                    <td>${new Date(item.saleDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td> <!-- CORREÇÃO AQUI -->
+                    <td>${item.customer}</td>
+                    <td>${item.productsSold}</td>
+                    <td>${item.paymentMethod}</td>
+                    <td>R$ ${item.totalSaleValue.toFixed(2)}</td>
+                    <td>${item.isInstallment ? 'Sim' : 'Não'}</td>
+                    <td>${item.installmentCount}</td>
+                    <td>R$ ${item.installmentValue.toFixed(2)}</td>
+                    <td>${item.interestApplied.toFixed(1)}%</td>
+                    <td>R$ ${item.amountReceived.toFixed(2)}</td>
+                    <td>R$ ${item.amountPending.toFixed(2)}</td>
+                    <td><span class="status-badge ${statusBadgeClass}">${item.saleStatus}</span></td>
+                `;
+                financialReportTableBody.appendChild(row);
+            });
+        }
+
+        function filterFinancialReport() {
+            renderFinancialReport();
+        }
+
+
         // --- Inicialização ---
         document.addEventListener('DOMContentLoaded', async function() {
+            // Nota importante: Para que o IndexedDB funcione corretamente e persista os dados,
+            // este arquivo HTML deve ser servido por um servidor web (mesmo que local),
+            // e não aberto diretamente do sistema de arquivos (ex: file:///C:/...).
+            // Se você estiver vendo erros de IndexedDB ou dados não persistindo,
+            // use ferramentas como o Live Server (para VS Code) ou `python -m http.server`
+            // para servir o arquivo via HTTP.
             await openIndexedDB();
             await loadAllDataAndRender(); // Carrega os dados do DB e então renderiza a UI
             
             // Define a data atual para os filtros de data
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString(); // Usando a função para obter a data local
             document.getElementById('saleDateFilterEnd').value = today;
+            document.getElementById('stockMoveDateFilterEnd').value = today;
+            document.getElementById('financeReportDateFilterEnd').value = today;
+
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
             document.getElementById('saleDateFilterStart').value = sixMonthsAgo.toISOString().split('T')[0];
+            document.getElementById('stockMoveDateFilterStart').value = sixMonthsAgo.toISOString().split('T')[0];
+            document.getElementById('financeReportDateFilterStart').value = sixMonthsAgo.toISOString().split('T')[0];
         });
     </script>
 </body>
